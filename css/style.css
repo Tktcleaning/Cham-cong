@@ -1,0 +1,259 @@
+/* Chấm Công TKT Cleaning — giao diện tối giản cho người lớn tuổi (50+) */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 20px;
+  background: #f5f5f5;
+  color: #1a1a1a;
+}
+
+button, input { font-family: inherit; font-size: inherit; }
+
+.view {
+  display: none;
+  min-height: 100vh;
+  flex-direction: column;
+}
+.view.active { display: flex; }
+
+/* ---------- Đăng nhập ---------- */
+.login-box {
+  margin: auto;
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 28px;
+  text-align: center;
+}
+.logo { font-size: 64px; }
+.login-box h1 { font-size: 30px; color: #1b5e20; margin-top: 8px; }
+.subtitle { font-size: 20px; color: #555; margin-bottom: 28px; }
+
+.login-box label {
+  display: block;
+  text-align: left;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 16px 0 8px;
+  color: #333;
+}
+.login-box input {
+  width: 100%;
+  padding: 16px;
+  font-size: 22px;
+  border: 2px solid #c8e6c9;
+  border-radius: 12px;
+  background: #fff;
+}
+.login-box input:focus { outline: none; border-color: #4caf50; }
+
+.error-text {
+  color: #c62828;
+  font-size: 18px;
+  margin-top: 14px;
+  min-height: 24px;
+}
+
+/* ---------- Nút bấm chung ---------- */
+.btn {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.btn-large { padding: 20px; font-size: 24px; margin-top: 24px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary { background: linear-gradient(135deg, #4caf50, #1b5e20); color: #fff; }
+.btn-secondary { background: #fff; color: #1b5e20; border: 2px solid #4caf50; }
+
+.btn-icon {
+  width: 44px; height: 44px;
+  border: none; background: none;
+  font-size: 26px; cursor: pointer;
+}
+
+/* ---------- Thanh trên cùng ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+.user-name { font-size: 22px; font-weight: 700; color: #1b5e20; }
+.user-phone { font-size: 17px; color: #666; }
+
+/* ---------- Chọn dự án ---------- */
+.project-hint {
+  padding: 20px 24px 4px;
+  font-size: 19px;
+  color: #555;
+}
+.project-list { padding: 12px 20px; flex: 1; overflow-y: auto; }
+.project-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 2px solid #c8e6c9;
+  border-radius: 14px;
+  padding: 20px 18px;
+  margin-bottom: 14px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1b5e20;
+  cursor: pointer;
+}
+.project-item:active { background: #e8f5e9; border-color: #4caf50; }
+.project-item.selected { background: #4caf50; color: #fff; border-color: #1b5e20; }
+
+/* ---------- Huy hiệu dự án đang chọn (màn hình chính) ---------- */
+.project-badge {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: calc(100% - 40px);
+  margin: 14px 20px 0;
+  padding: 14px 18px;
+  background: #e8f5e9;
+  border: none;
+  border-radius: 12px;
+  font-size: 19px;
+  font-weight: 700;
+  color: #1b5e20;
+  cursor: pointer;
+}
+.change-hint { font-size: 16px; font-weight: 600; color: #4caf50; }
+
+/* ---------- Đồng hồ ---------- */
+.clock-box { text-align: center; padding: 28px 20px 8px; }
+.clock-time { font-size: 52px; font-weight: 800; color: #1a1a1a; letter-spacing: 1px; }
+.clock-date { font-size: 20px; color: #666; margin-top: 4px; }
+
+/* ---------- Trạng thái ---------- */
+.status-banner {
+  margin: 20px 24px;
+  padding: 16px;
+  border-radius: 14px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+.status-off { background: #eeeeee; color: #616161; }
+.status-on { background: linear-gradient(135deg, #a5d6a7, #4caf50); color: #fff; }
+
+/* ---------- Khu vực nút chấm công ---------- */
+.action-area {
+  display: flex;
+  gap: 16px;
+  padding: 8px 24px;
+}
+.btn-checkin, .btn-checkout {
+  flex: 1;
+  padding: 28px 12px;
+  border: none;
+  border-radius: 18px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.btn-icon-big { font-size: 40px; }
+.btn-checkin { background: linear-gradient(135deg, #66bb6a, #1b5e20); }
+.btn-checkout { background: linear-gradient(135deg, #ef5350, #b71c1c); }
+.btn-checkin:disabled, .btn-checkout:disabled { background: #cfd8dc; color: #78909c; }
+
+.gps-status {
+  text-align: center;
+  font-size: 17px;
+  color: #666;
+  margin-top: 18px;
+  padding: 0 24px;
+  min-height: 24px;
+}
+
+/* ---------- Nút xem lịch sử ---------- */
+#btn-history { max-width: 92%; margin-left: auto; margin-right: auto; }
+
+/* ---------- Lịch sử ---------- */
+.history-list { padding: 16px 20px; flex: 1; overflow-y: auto; }
+.empty-text { text-align: center; color: #888; margin-top: 40px; font-size: 19px; }
+
+.history-item {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  border-left: 8px solid #4caf50;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.history-item.out { border-left-color: #e53935; }
+.history-item .row-1 {
+  display: flex;
+  justify-content: space-between;
+  font-size: 20px;
+  font-weight: 700;
+}
+.history-item .row-2 {
+  font-size: 16px;
+  color: #666;
+  margin-top: 6px;
+}
+.history-item .row-3 {
+  font-size: 16px;
+  color: #1b5e20;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.history-item .photo-thumb {
+  width: 100%;
+  max-width: 220px;
+  border-radius: 10px;
+  margin-top: 10px;
+  display: block;
+}
+
+/* ---------- Overlay loading ---------- */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.overlay.active { display: flex; }
+.overlay-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 40px;
+  text-align: center;
+}
+.overlay-box p { margin-top: 16px; font-size: 19px; }
+.spinner {
+  width: 48px; height: 48px;
+  margin: 0 auto;
+  border: 5px solid #c8e6c9;
+  border-top-color: #1b5e20;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Màn hình nhỏ: giữ nút đủ lớn để bấm dễ */
+@media (max-width: 360px) {
+  .clock-time { font-size: 42px; }
+  .btn-icon-big { font-size: 32px; }
+}

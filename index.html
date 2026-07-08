@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1b5e20">
+<title>Chấm Công TKT Cleaning</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- MÀN HÌNH ĐĂNG NHẬP -->
+<section id="view-login" class="view active">
+  <div class="login-box">
+    <div class="logo">🧹</div>
+    <h1>TKT Cleaning</h1>
+    <p class="subtitle">Chấm công công trình</p>
+
+    <label for="input-phone">Số điện thoại</label>
+    <input type="tel" id="input-phone" inputmode="numeric" placeholder="Ví dụ: 0912345678" autocomplete="off">
+
+    <label for="input-employee">Mã nhân viên</label>
+    <input type="text" id="input-employee" placeholder="Ví dụ: NV001" autocomplete="off">
+
+    <button id="btn-login" class="btn btn-primary btn-large">ĐĂNG NHẬP</button>
+    <p id="login-error" class="error-text"></p>
+  </div>
+</section>
+
+<!-- MÀN HÌNH CHỌN DỰ ÁN -->
+<section id="view-project" class="view">
+  <header class="topbar">
+    <div class="user-name">Chọn công trình</div>
+    <button id="btn-project-logout" class="btn-icon" title="Đăng xuất">🚪</button>
+  </header>
+
+  <p class="project-hint">Chọn công trình bạn đang làm việc hôm nay:</p>
+  <div id="project-list" class="project-list"></div>
+</section>
+
+<!-- MÀN HÌNH CHẤM CÔNG -->
+<section id="view-main" class="view">
+  <header class="topbar">
+    <div class="user-info">
+      <div class="user-name" id="label-employee">NV001</div>
+      <div class="user-phone" id="label-phone">0912345678</div>
+    </div>
+    <button id="btn-logout" class="btn-icon" title="Đăng xuất">🚪</button>
+  </header>
+
+  <button id="btn-change-project" class="project-badge">
+    <span id="label-project">🏗️ Chưa chọn công trình</span>
+    <span class="change-hint">Đổi ›</span>
+  </button>
+
+  <div class="clock-box">
+    <div id="clock-time" class="clock-time">--:--:--</div>
+    <div id="clock-date" class="clock-date">-- / -- / ----</div>
+  </div>
+
+  <div id="status-banner" class="status-banner status-off">
+    <span id="status-text">CHƯA VÀO CA</span>
+  </div>
+
+  <div class="action-area">
+    <button id="btn-check-in" class="btn btn-checkin">
+      <span class="btn-icon-big">🟢</span>
+      <span>VÀO CA</span>
+    </button>
+    <button id="btn-check-out" class="btn btn-checkout" disabled>
+      <span class="btn-icon-big">🔴</span>
+      <span>TAN CA</span>
+    </button>
+  </div>
+
+  <p id="gps-status" class="gps-status">📍 Đang chờ chấm công...</p>
+
+  <button id="btn-history" class="btn btn-secondary btn-large">XEM LỊCH SỬ</button>
+</section>
+
+<!-- input ẩn để mở thẳng app Camera của điện thoại -->
+<input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none">
+
+<!-- MÀN HÌNH LỊCH SỬ -->
+<section id="view-history" class="view">
+  <header class="topbar">
+    <button id="btn-back" class="btn-icon" title="Quay lại">⬅️</button>
+    <div class="user-name">Lịch sử chấm công</div>
+    <div style="width:44px"></div>
+  </header>
+
+  <div id="history-list" class="history-list">
+    <p class="empty-text">Chưa có dữ liệu chấm công.</p>
+  </div>
+</section>
+
+<!-- LỚP PHỦ ĐANG LẤY VỊ TRÍ -->
+<div id="overlay-loading" class="overlay">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <p id="overlay-text">Đang lấy vị trí GPS...</p>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

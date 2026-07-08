@@ -264,26 +264,30 @@ async function finishCheck(type, photo) {
   gpsStatus.textContent = parts.join(" — ");
 }
 
-// VÀO CA: mở camera điện thoại chụp hình trước, rồi mới lấy vị trí và lưu.
+// VÀO CA / TAN CA: đều mở camera điện thoại chụp hình hiện trường trước, rồi mới lấy vị trí và lưu.
+let pendingCheckType = null;
+
 btnCheckIn.addEventListener("click", () => {
+  pendingCheckType = "in";
+  cameraInput.value = "";
+  cameraInput.click();
+});
+
+btnCheckOut.addEventListener("click", () => {
+  pendingCheckType = "out";
   cameraInput.value = "";
   cameraInput.click();
 });
 
 cameraInput.addEventListener("change", async () => {
   const file = cameraInput.files[0];
-  if (!file) return; // người dùng huỷ chụp hình
+  if (!file || !pendingCheckType) return; // người dùng huỷ chụp hình
 
   overlayLoading.classList.add("active");
   overlayText.textContent = "Đang xử lý ảnh...";
   const photo = await compressPhoto(file);
-  await finishCheck("in", photo);
-});
-
-// TAN CA: không cần chụp hình, chỉ ghi vị trí.
-btnCheckOut.addEventListener("click", () => {
-  overlayLoading.classList.add("active");
-  finishCheck("out", null);
+  await finishCheck(pendingCheckType, photo);
+  pendingCheckType = null;
 });
 
 // ---------- Đồng hồ sống ----------

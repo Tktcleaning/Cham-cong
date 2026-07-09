@@ -41,21 +41,16 @@ Nhớ chia sẻ (Share) Google Sheet cho đúng `client_email` trong file JSON k
 
 ## Phân công công trình
 
-Mỗi nhân viên chỉ thấy đúng các công trình được phân công cho mình (không phải danh sách chung cho tất cả). Dữ liệu lấy từ **1 file Sheet riêng** (tách khỏi file "Danh sách nhân viên" vì file đó chỉ dùng cho đăng nhập), trả về kèm luôn trong response của `api/login.js` — không cần gọi thêm API riêng.
+Mỗi nhân viên chỉ thấy đúng các công trình được phân công cho mình (không phải danh sách chung cho tất cả). Dữ liệu lấy từ tab **`PhanCong`** — thêm ngay trong cùng file Sheet "Danh sách nhân viên" (gộp chung cho 1 người dễ thao tác, thay vì tách file riêng như dự tính ban đầu), trả về kèm luôn trong response của `api/login.js` — không cần gọi thêm API riêng, không cần thêm biến môi trường/share gì mới.
 
-**Cấu trúc Sheet** (tên file gợi ý: `Phancong`, tab tên `PhanCong`, dòng 1 là tiêu đề — mỗi dòng là 1 cặp nhân viên–công trình, 1 nhân viên có thể có nhiều dòng nếu làm nhiều công trình):
+**Cấu trúc tab `PhanCong`** (dòng 1 là tiêu đề — mỗi dòng là 1 cặp nhân viên–công trình, 1 nhân viên có thể có nhiều dòng nếu làm nhiều công trình):
 
 | Mã Nhân Viên | Mã Công Trình | Tên Công Trình |
 |---|---|---|
 | VP001 | CT01 | Chung cư Green Tower |
 | VP001 | CT02 | Cao ốc văn phòng ABC |
 
-**Biến môi trường thêm:**
-- `GOOGLE_ASSIGNMENT_SHEET_ID` — ID của file Sheet phân công này, lấy từ URL giữa `/d/` và `/edit`.
-
-Nhớ **share file Sheet này** cho đúng `client_email` của service account (quyền Editor) — dùng chung 1 service account với các phần khác.
-
-Nếu chưa cấu hình `GOOGLE_ASSIGNMENT_SHEET_ID`, hoặc nhân viên chưa có dòng nào trong Sheet này, app sẽ báo "Bạn chưa được phân công công trình nào" ở màn hình chọn công trình thay vì crash hay hiện danh sách rỗng khó hiểu.
+Nếu nhân viên chưa có dòng nào trong tab này, app sẽ báo "Bạn chưa được phân công công trình nào" ở màn hình chọn công trình thay vì crash hay hiện danh sách rỗng khó hiểu.
 
 ## Đồng bộ dữ liệu chấm công
 

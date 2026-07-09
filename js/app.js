@@ -226,28 +226,47 @@ function getPosition(options) {
   });
 }
 
+// Một số trình duyệt (vd Chrome trên iOS) đôi khi không tự gọi callback thành công/thất bại
+// đúng như "timeout" khai báo trong options — treo vô thời hạn. Nên luôn bọc thêm một
+// đồng hồ đếm giờ độc lập ở phía code của mình để chắc chắn luôn thoát ra được.
+function withTimeout(promise, ms) {
+  promise.catch(() => {}); // tránh cảnh báo "unhandled rejection" nếu promise gốc thua cuộc đua rồi mới reject
+  const ourTimeout = Object.assign(new Error("Hết thời gian chờ (tự đặt)"), { code: 3 });
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(ourTimeout), ms)),
+  ]);
+}
+
 // Thử định vị chính xác (GPS vệ tinh) trước; nếu bị từ chối quyền thì báo rõ luôn.
-// Nếu chỉ timeout (thường gặp khi ở trong công trình/nhà che khuất tín hiệu vệ tinh),
-// thử lại lần 2 với định vị theo mạng/wifi — nhanh hơn dù kém chính xác hơn.
+// Nếu chỉ timeout (thường gặp khi ở trong công trình/nhà che khuất tín hiệu vệ tinh,
+// hoặc trình duyệt "treo" không phản hồi), thử lại lần 2 với định vị theo mạng/wifi —
+// nhanh hơn dù kém chính xác hơn.
 async function getLocation() {
   if (!navigator.geolocation) {
     return { lat: null, lng: null, accuracy: null, note: "Thiết bị không hỗ trợ định vị GPS" };
   }
 
   try {
-    const pos = await getPosition({ enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+    const pos = await withTimeout(
+      getPosition({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }),
+      11000
+    );
     return { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, note: null };
   } catch (err) {
-    if (err.code === err.PERMISSION_DENIED) {
+    if (err.code === 1 /* PERMISSION_DENIED */) {
       return { lat: null, lng: null, accuracy: null, note: "Chưa cấp quyền vị trí cho trình duyệt — vào Cài đặt bật lại quyền vị trí" };
     }
   }
 
   try {
-    const pos = await getPosition({ enableHighAccuracy: false, timeout: 10000, maximumAge: 0 });
+    const pos = await withTimeout(
+      getPosition({ enableHighAccuracy: false, timeout: 8000, maximumAge: 0 }),
+      9000
+    );
     return { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, note: null };
   } catch (err) {
-    const note = err.code === err.TIMEOUT
+    const note = err.code === 3 /* TIMEOUT */
       ? "Hết thời gian chờ định vị — thử lại ở nơi thoáng hơn (gần cửa sổ/ngoài trời)"
       : "Không xác định được vị trí";
     return { lat: null, lng: null, accuracy: null, note };

@@ -84,10 +84,21 @@ function isValidPhone(phone) {
   return /^0\d{9}$/.test(phone);
 }
 
-// Gửi bản ghi chấm công (kèm ảnh) lên hệ thống công ty.
-// TODO: chưa có backend thật — hiện chỉ lưu localStorage. Khi có API, thay nội dung hàm này bằng fetch() POST thật.
-function sendToServer(record) {
-  console.log("[demo] Sẽ gửi lên server công ty:", { ...record, photo: record.photo ? "<base64 ảnh>" : null });
+// Gửi bản ghi chấm công (kèm ảnh) lên Google Sheet của công ty qua api/checkin.js.
+// Bản ghi vẫn luôn được lưu trước vào localStorage (saveRecord) làm bản sao dự phòng —
+// nếu gửi lên server thất bại (mất mạng...), dữ liệu không bị mất, chỉ là chưa đồng bộ.
+async function sendToServer(record) {
+  try {
+    const res = await fetch("/api/checkin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(record),
+    });
+    const data = await res.json();
+    return data.ok === true;
+  } catch (err) {
+    return false;
+  }
 }
 
 // ---------- Đăng nhập ----------
@@ -331,6 +342,7 @@ async function finishCheck(type, photo, loc) {
   const record = {
     phone: user.phone,
     employeeId: user.employeeId,
+    fullName: user.fullName || "",
     projectId: project.id,
     projectName: project.name,
     type,
@@ -340,12 +352,14 @@ async function finishCheck(type, photo, loc) {
   };
 
   saveRecord(record);
-  sendToServer(record);
+  overlayText.textContent = "Đang gửi dữ liệu lên hệ thống...";
+  const sent = await sendToServer(record);
   overlayLoading.classList.remove("active");
   refreshStatus();
 
   const label = type === "in" ? "VÀO CA" : "TAN CA";
   const parts = [`✅ Đã chấm công ${label} lúc ${formatTime(now)}`, `tại ${project.name}`];
+  if (!sent) parts.push("⚠️ Đã lưu tạm trên máy, chưa gửi được lên hệ thống công ty (sẽ thử lại sau)");
   if (loc.note) parts.push(`⚠️ ${loc.note}`);
   gpsStatus.textContent = parts.join(" — ");
 }

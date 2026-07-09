@@ -5,7 +5,7 @@
 ## Trạng thái hiện tại
 
 - **Đăng nhập:** kiểm tra thật qua Google Sheet danh sách nhân viên (không phải OTP SMS) — xem mục "Đăng nhập & khoá thiết bị" bên dưới.
-- **Dữ liệu chấm công (ảnh, giờ, GPS):** vẫn lưu tạm trong `localStorage` của trình duyệt — mất khi đổi thiết bị hoặc xoá cache. **Chưa gửi về server công ty** (việc này khác với phần đăng nhập, sẽ làm ở bước tiếp theo).
+- **Dữ liệu chấm công (ảnh, giờ, GPS):** gửi thật lên Google Sheet + Google Drive của công ty qua `api/checkin.js` — xem mục "Đồng bộ dữ liệu chấm công" bên dưới. Vẫn giữ thêm 1 bản sao trong `localStorage` làm dự phòng nếu gửi lên server thất bại (mất mạng...).
 - **Định vị:** dùng `navigator.geolocation` của trình duyệt, cần HTTPS (hoặc localhost) và người dùng cho phép quyền vị trí.
 
 ## Đăng nhập & khoá thiết bị (chống chấm công hộ)
@@ -38,6 +38,24 @@
 
 Nhớ chia sẻ (Share) Google Sheet cho đúng `client_email` trong file JSON key (dạng `...@...iam.gserviceaccount.com`) với quyền **Editor**, nếu không hàm sẽ báo lỗi không đọc/ghi được.
 
+## Đồng bộ dữ liệu chấm công
+
+Mỗi lần bấm **VÀO CA** hoặc **TAN CA** là một lần gửi riêng biệt lên `api/checkin.js` — tức 1 ca làm ra 2 dòng dữ liệu (1 dòng vào, 1 dòng ra), không gộp chung.
+
+**Ảnh chụp không lưu trực tiếp trong Sheet** (mỗi ô Sheet giới hạn ~50.000 ký tự, ảnh nén xong ở dạng base64 vẫn thường vượt mức đó). Thay vào đó: ảnh được **upload lên một thư mục Google Drive**, Sheet chỉ lưu link ảnh đó.
+
+**Cấu trúc Sheet** (tab tên `ChamCong`, dòng 1 là tiêu đề, cùng file Sheet với danh sách nhân viên):
+
+| Thời Gian | Số Điện Thoại | Mã Nhân Viên | Họ Tên | Loại | Dự Án | Vĩ Độ | Kinh Độ | Link Ảnh |
+|---|---|---|---|---|---|---|---|---|
+
+**Biến môi trường thêm** (ngoài 2 biến ở mục đăng nhập):
+- `GOOGLE_DRIVE_FOLDER_ID` — ID của thư mục Google Drive chứa ảnh chấm công, lấy từ URL thư mục (đoạn sau `/folders/`).
+
+Nhớ **share thư mục Drive đó** cho đúng `client_email` của service account (quyền Editor) — dùng chung 1 service account với phần Sheet, không cần tạo thêm.
+
+Nếu gửi lên server thất bại (ảnh vẫn lưu tạm trong `localStorage` máy công nhân), app sẽ báo "Đã lưu tạm trên máy, chưa gửi được lên hệ thống công ty" — hiện chưa có cơ chế tự động gửi lại, cần làm thêm nếu cần độ tin cậy cao hơn.
+
 ## Trình duyệt khuyến nghị cho công nhân
 
 - **iPhone (iOS): dùng Safari.** Đã test kỹ, chạy ổn định — chụp ảnh + lấy GPS đều mượt.
@@ -54,8 +72,8 @@ npx serve Cham_Cong
 
 ## Việc cần làm tiếp để lên bản thật
 
-1. **Backend lưu dữ liệu chấm công thật** — thay `localStorage` bằng gửi ảnh/giờ/GPS/dự án về server/database của công ty (đăng nhập đã làm xong ở trên, còn phần ghi nhận chấm công thì chưa).
-2. **Danh sách công trình thật** — hiện đang hard-code 5 công trình mẫu trong `PROJECTS` (js/app.js), cần thay bằng danh sách thật (có thể dùng chung cơ chế Google Sheet như danh sách nhân viên).
-3. **Trang quản trị cho công ty** — xem báo cáo chấm công của tất cả công nhân, xuất Excel, theo công trình.
-4. **Kiểm tra vị trí công trình** — so khớp GPS chấm công với toạ độ công trình được giao (tránh chấm công sai địa điểm).
+1. **Danh sách công trình thật** — hiện đang hard-code 5 công trình mẫu trong `PROJECTS` (js/app.js), cần thay bằng danh sách thật (có thể dùng chung cơ chế Google Sheet như danh sách nhân viên).
+2. **Trang quản trị cho công ty** — xem báo cáo chấm công của tất cả công nhân trực tiếp qua Google Sheet hiện tại, hoặc xây thêm giao diện lọc/xuất Excel riêng theo công trình nếu cần.
+3. **Kiểm tra vị trí công trình** — so khớp GPS chấm công với toạ độ công trình được giao (tránh chấm công sai địa điểm).
+4. **Tự động gửi lại khi mất mạng** — hiện nếu gửi `api/checkin.js` thất bại, dữ liệu chỉ nằm trong `localStorage` máy công nhân, chưa có cơ chế tự đồng bộ lại khi có mạng trở lại.
 5. **Icon/logo chính thức** — `icons/icon-192.png` và `icon-512.png` hiện là placeholder ("CC"), cần thay bằng logo TKT Cleaning thật.

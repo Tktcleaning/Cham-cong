@@ -1,2 +1,5 @@
 node_modules/
 test-run.mjs
+
+.vercel
+.env*

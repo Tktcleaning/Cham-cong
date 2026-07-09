@@ -29,14 +29,14 @@ button, input { font-family: inherit; font-size: inherit; }
 
 /* ---------- Đăng nhập ---------- */
 .login-box {
-  margin: auto;
+  margin: 6vh auto 0;
   width: 100%;
   max-width: 420px;
   padding: 32px 28px;
   text-align: center;
 }
 .logo { width: 96px; height: 96px; object-fit: contain; }
-.slogan { font-size: 15px; color: #888; font-style: italic; margin-top: 8px; margin-bottom: 4px; }
+.slogan { font-size: 15px; color: #888; font-style: italic; margin-top: 4px; margin-bottom: 4px; }
 .subtitle { font-size: 30px; font-weight: 700; color: #333; margin-bottom: 24px; }
 
 .login-box label {

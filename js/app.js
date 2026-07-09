@@ -1,8 +1,10 @@
 /*
- * Chấm Công TKT Cleaning — bản demo khung sườn.
- * Dữ liệu chấm công (kể cả ảnh chụp) lưu tạm trong localStorage của trình duyệt — CHƯA gửi lên server công ty.
+ * Chấm Công TKT Cleaning.
+ * Dữ liệu chấm công (kể cả ảnh chụp) gửi thật lên Google Sheet + Vercel Blob qua api/checkin.js,
+ * đồng thời giữ thêm 1 bản sao trong localStorage làm dự phòng nếu gửi server thất bại.
  * Đăng nhập: kiểm tra thật qua Google Sheet danh sách nhân viên (xem api/login.js), có khoá theo "mã máy"
- * để một SĐT + mã NV chỉ dùng được trên 1 thiết bị — tránh chấm công hộ.
+ * để một SĐT + mã NV chỉ dùng được trên 1 thiết bị — tránh chấm công hộ. Danh sách công trình mỗi
+ * nhân viên được thấy cũng lấy từ Sheet "PhanCong" riêng, trả về kèm lúc đăng nhập.
  */
 
 const STORAGE_USER = "chamcong_user";
@@ -20,15 +22,6 @@ function getDeviceId() {
   }
   return id;
 }
-
-// Danh sách công trình mẫu — sau này thay bằng danh sách thật từ hệ thống công ty.
-const PROJECTS = [
-  { id: "ct01", name: "Chung cư Green Tower" },
-  { id: "ct02", name: "Cao ốc văn phòng ABC" },
-  { id: "ct03", name: "Nhà xưởng KCN Tân Bình" },
-  { id: "ct04", name: "Trung tâm thương mại Sun Mall" },
-  { id: "ct05", name: "Biệt thự khu The Garden" },
-];
 
 const view = {
   login: document.getElementById("view-login"),
@@ -137,7 +130,7 @@ btnLogin.addEventListener("click", async () => {
       return;
     }
 
-    setUser({ phone, employeeId, fullName: data.fullName || "" });
+    setUser({ phone, employeeId, fullName: data.fullName || "", projects: data.projects || [] });
     renderProjectList();
     showView("project");
   } catch (err) {
@@ -162,15 +155,23 @@ const projectList = document.getElementById("project-list");
 const labelProject = document.getElementById("label-project");
 
 function renderProjectList() {
+  const user = getUser();
+  const projects = (user && user.projects) || [];
+
+  if (projects.length === 0) {
+    projectList.innerHTML = '<p class="empty-text">Bạn chưa được phân công công trình nào. Vui lòng liên hệ công ty.</p>';
+    return;
+  }
+
   const current = getCurrentProject();
-  projectList.innerHTML = PROJECTS.map(p => `
+  projectList.innerHTML = projects.map(p => `
     <button class="project-item ${current && current.id === p.id ? "selected" : ""}" data-id="${p.id}">
       🏗️ ${p.name}
     </button>`).join("");
 
   projectList.querySelectorAll(".project-item").forEach(btn => {
     btn.addEventListener("click", () => {
-      const project = PROJECTS.find(p => p.id === btn.dataset.id);
+      const project = projects.find(p => p.id === btn.dataset.id);
       setCurrentProject(project);
       enterMainView();
     });

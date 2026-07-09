@@ -3,6 +3,8 @@ const { getAuth } = require("./_lib/google");
 
 // Sheet "NhanVien": cột A Họ Tên | B Số Điện Thoại | C Mã Nhân Viên | D Mã Máy. Dòng 1 là tiêu đề.
 const SHEET_RANGE = "NhanVien!A2:D";
+// File Sheet riêng "PhanCong": cột A Mã Nhân Viên | B Mã Công Trình | C Tên Công Trình.
+const ASSIGNMENT_RANGE = "PhanCong!A2:C";
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
 module.exports = async (req, res) => {
@@ -60,7 +62,22 @@ module.exports = async (req, res) => {
       });
     }
 
-    res.status(200).json({ ok: true, fullName });
+    // Lấy danh sách công trình được phân công cho đúng nhân viên này từ file Sheet "PhanCong" riêng.
+    let projects = [];
+    const assignmentSheetId = process.env.GOOGLE_ASSIGNMENT_SHEET_ID;
+    if (assignmentSheetId) {
+      const { data: assignData } = await sheets.spreadsheets.values.get({
+        spreadsheetId: assignmentSheetId,
+        range: ASSIGNMENT_RANGE,
+      });
+      const assignRows = assignData.values || [];
+      projects = assignRows
+        .filter(r => (r[0] || "").trim().toLowerCase() === employeeId.trim().toLowerCase())
+        .map(r => ({ id: (r[1] || "").trim(), name: (r[2] || "").trim() }))
+        .filter(p => p.id && p.name);
+    }
+
+    res.status(200).json({ ok: true, fullName, projects });
   } catch (err) {
     console.error(err);
     res.status(500).json({ ok: false, message: "Lỗi hệ thống, vui lòng thử lại sau" });

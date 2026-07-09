@@ -5,7 +5,8 @@
 ## Trạng thái hiện tại
 
 - **Đăng nhập:** kiểm tra thật qua Google Sheet danh sách nhân viên (không phải OTP SMS) — xem mục "Đăng nhập & khoá thiết bị" bên dưới.
-- **Dữ liệu chấm công (ảnh, giờ, GPS):** gửi thật lên Google Sheet + Google Drive của công ty qua `api/checkin.js` — xem mục "Đồng bộ dữ liệu chấm công" bên dưới. Vẫn giữ thêm 1 bản sao trong `localStorage` làm dự phòng nếu gửi lên server thất bại (mất mạng...).
+- **Dữ liệu chấm công (ảnh, giờ, GPS):** gửi thật lên Google Sheet + Vercel Blob (ảnh) của công ty qua `api/checkin.js` — xem mục "Đồng bộ dữ liệu chấm công" bên dưới. Vẫn giữ thêm 1 bản sao trong `localStorage` làm dự phòng nếu gửi lên server thất bại (mất mạng...).
+- **Danh sách công trình mỗi nhân viên:** lấy thật từ Sheet "PhanCong" riêng, trả về kèm lúc đăng nhập — xem mục "Phân công công trình" bên dưới.
 - **Định vị:** dùng `navigator.geolocation` của trình duyệt, cần HTTPS (hoặc localhost) và người dùng cho phép quyền vị trí.
 
 ## Đăng nhập & khoá thiết bị (chống chấm công hộ)
@@ -37,6 +38,24 @@
 - `GOOGLE_SHEET_ID` — lấy từ URL của Google Sheet, đoạn giữa `/d/` và `/edit`.
 
 Nhớ chia sẻ (Share) Google Sheet cho đúng `client_email` trong file JSON key (dạng `...@...iam.gserviceaccount.com`) với quyền **Editor**, nếu không hàm sẽ báo lỗi không đọc/ghi được.
+
+## Phân công công trình
+
+Mỗi nhân viên chỉ thấy đúng các công trình được phân công cho mình (không phải danh sách chung cho tất cả). Dữ liệu lấy từ **1 file Sheet riêng** (tách khỏi file "Danh sách nhân viên" vì file đó chỉ dùng cho đăng nhập), trả về kèm luôn trong response của `api/login.js` — không cần gọi thêm API riêng.
+
+**Cấu trúc Sheet** (tên file gợi ý: `Phancong`, tab tên `PhanCong`, dòng 1 là tiêu đề — mỗi dòng là 1 cặp nhân viên–công trình, 1 nhân viên có thể có nhiều dòng nếu làm nhiều công trình):
+
+| Mã Nhân Viên | Mã Công Trình | Tên Công Trình |
+|---|---|---|
+| VP001 | CT01 | Chung cư Green Tower |
+| VP001 | CT02 | Cao ốc văn phòng ABC |
+
+**Biến môi trường thêm:**
+- `GOOGLE_ASSIGNMENT_SHEET_ID` — ID của file Sheet phân công này, lấy từ URL giữa `/d/` và `/edit`.
+
+Nhớ **share file Sheet này** cho đúng `client_email` của service account (quyền Editor) — dùng chung 1 service account với các phần khác.
+
+Nếu chưa cấu hình `GOOGLE_ASSIGNMENT_SHEET_ID`, hoặc nhân viên chưa có dòng nào trong Sheet này, app sẽ báo "Bạn chưa được phân công công trình nào" ở màn hình chọn công trình thay vì crash hay hiện danh sách rỗng khó hiểu.
 
 ## Đồng bộ dữ liệu chấm công
 
@@ -73,8 +92,7 @@ npx serve Cham_Cong
 
 ## Việc cần làm tiếp để lên bản thật
 
-1. **Danh sách công trình thật** — hiện đang hard-code 5 công trình mẫu trong `PROJECTS` (js/app.js), cần thay bằng danh sách thật (có thể dùng chung cơ chế Google Sheet như danh sách nhân viên).
-2. **Trang quản trị cho công ty** — xem báo cáo chấm công của tất cả công nhân trực tiếp qua Google Sheet hiện tại, hoặc xây thêm giao diện lọc/xuất Excel riêng theo công trình nếu cần.
-3. **Kiểm tra vị trí công trình** — so khớp GPS chấm công với toạ độ công trình được giao (tránh chấm công sai địa điểm).
-4. **Tự động gửi lại khi mất mạng** — hiện nếu gửi `api/checkin.js` thất bại, dữ liệu chỉ nằm trong `localStorage` máy công nhân, chưa có cơ chế tự đồng bộ lại khi có mạng trở lại.
-5. **Icon/logo chính thức** — `icons/icon-192.png` và `icon-512.png` hiện là placeholder ("CC"), cần thay bằng logo TKT Cleaning thật.
+1. **Trang quản trị cho công ty** — xem báo cáo chấm công của tất cả công nhân trực tiếp qua Google Sheet hiện tại, hoặc xây thêm giao diện lọc/xuất Excel riêng theo công trình nếu cần.
+2. **Kiểm tra vị trí công trình** — so khớp GPS chấm công với toạ độ công trình được giao (tránh chấm công sai địa điểm).
+3. **Tự động gửi lại khi mất mạng** — hiện nếu gửi `api/checkin.js` thất bại, dữ liệu chỉ nằm trong `localStorage` máy công nhân, chưa có cơ chế tự đồng bộ lại khi có mạng trở lại.
+4. **Icon/logo chính thức** — `icons/icon-192.png` và `icon-512.png` hiện là placeholder ("CC"), cần thay bằng logo TKT Cleaning thật.

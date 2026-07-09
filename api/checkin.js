@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
     const auth = getAuth(SCOPES);
     const sheets = google.sheets({ version: "v4", auth });
     const drive = google.drive({ version: "v3", auth });
-    const sheetId = process.env.GOOGLE_SHEET_ID;
+    const sheetId = process.env.GOOGLE_ATTENDANCE_SHEET_ID;
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
     let photoLink = "";

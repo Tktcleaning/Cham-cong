@@ -43,7 +43,8 @@ module.exports = async (req, res) => {
 
     const rows = data.values || [];
     const rowIndex = rows.findIndex(
-      r => (r[1] || "").trim() === phone.trim() && (r[2] || "").trim() === employeeId.trim()
+      r => (r[1] || "").trim() === phone.trim()
+        && (r[2] || "").trim().toLowerCase() === employeeId.trim().toLowerCase()
     );
 
     if (rowIndex === -1) {

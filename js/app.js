@@ -1,12 +1,25 @@
 /*
  * Chấm Công TKT Cleaning — bản demo khung sườn.
- * Dữ liệu (kể cả ảnh chụp) lưu tạm trong localStorage của trình duyệt — CHƯA gửi lên server công ty.
- * Đăng nhập demo: chỉ cần SĐT + mã nhân viên, chưa gửi OTP thật.
+ * Dữ liệu chấm công (kể cả ảnh chụp) lưu tạm trong localStorage của trình duyệt — CHƯA gửi lên server công ty.
+ * Đăng nhập: kiểm tra thật qua Google Sheet danh sách nhân viên (xem api/login.js), có khoá theo "mã máy"
+ * để một SĐT + mã NV chỉ dùng được trên 1 thiết bị — tránh chấm công hộ.
  */
 
 const STORAGE_USER = "chamcong_user";
 const STORAGE_RECORDS = "chamcong_records";
 const STORAGE_PROJECT = "chamcong_current_project";
+const STORAGE_DEVICE = "chamcong_device_id";
+
+// "Mã máy": vì là ứng dụng web nên không lấy được ID phần cứng thật — tạo 1 mã ngẫu nhiên
+// duy nhất lưu trong trình duyệt ngay lần đầu mở app, dùng để khoá 1 SĐT+mã NV vào 1 thiết bị.
+function getDeviceId() {
+  let id = localStorage.getItem(STORAGE_DEVICE);
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    localStorage.setItem(STORAGE_DEVICE, id);
+  }
+  return id;
+}
 
 // Danh sách công trình mẫu — sau này thay bằng danh sách thật từ hệ thống công ty.
 const PROJECTS = [
@@ -81,8 +94,9 @@ function sendToServer(record) {
 const inputPhone = document.getElementById("input-phone");
 const inputEmployee = document.getElementById("input-employee");
 const loginError = document.getElementById("login-error");
+const btnLogin = document.getElementById("btn-login");
 
-document.getElementById("btn-login").addEventListener("click", () => {
+btnLogin.addEventListener("click", async () => {
   const phone = inputPhone.value.trim();
   const employeeId = inputEmployee.value.trim();
 
@@ -96,9 +110,31 @@ document.getElementById("btn-login").addEventListener("click", () => {
   }
 
   loginError.textContent = "";
-  setUser({ phone, employeeId });
-  renderProjectList();
-  showView("project");
+  btnLogin.disabled = true;
+  btnLogin.textContent = "ĐANG KIỂM TRA...";
+
+  try {
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, employeeId, deviceId: getDeviceId() }),
+    });
+    const data = await res.json();
+
+    if (!data.ok) {
+      loginError.textContent = data.message || "Đăng nhập thất bại";
+      return;
+    }
+
+    setUser({ phone, employeeId, fullName: data.fullName || "" });
+    renderProjectList();
+    showView("project");
+  } catch (err) {
+    loginError.textContent = "Không kết nối được máy chủ, vui lòng thử lại.";
+  } finally {
+    btnLogin.disabled = false;
+    btnLogin.textContent = "ĐĂNG NHẬP";
+  }
 });
 
 function logout() {
@@ -154,7 +190,7 @@ function enterMainView() {
   const project = getCurrentProject();
   if (!project) { renderProjectList(); showView("project"); return; }
 
-  labelEmployee.textContent = user.employeeId;
+  labelEmployee.textContent = user.fullName ? `${user.fullName} (${user.employeeId})` : user.employeeId;
   labelPhone.textContent = user.phone;
   labelProject.textContent = `🏗️ ${project.name}`;
   refreshStatus();

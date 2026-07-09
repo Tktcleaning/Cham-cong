@@ -1,6 +1,7 @@
 const { google } = require("googleapis");
 const { put } = require("@vercel/blob");
 const { getAuth } = require("./_lib/google");
+const { toVietnamTimeString } = require("./_lib/time");
 
 // Chỉ cần quyền Sheets — ảnh chấm công lưu ở Vercel Blob, không dùng Google Drive nữa
 // (service account của Google không có dung lượng lưu trữ riêng trên Drive cá nhân/gmail thường).
@@ -56,7 +57,7 @@ module.exports = async (req, res) => {
       insertDataOption: "INSERT_ROWS",
       requestBody: {
         values: [[
-          timestamp,
+          toVietnamTimeString(timestamp),
           phone,
           employeeId,
           fullName || "",

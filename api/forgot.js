@@ -1,5 +1,6 @@
 const { google } = require("googleapis");
 const { getAuth } = require("./_lib/google");
+const { toVietnamTimeString } = require("./_lib/time");
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
@@ -34,7 +35,7 @@ module.exports = async (req, res) => {
       insertDataOption: "INSERT_ROWS",
       requestBody: {
         values: [[
-          timestamp,
+          toVietnamTimeString(timestamp),
           phone,
           employeeId,
           fullName || "",

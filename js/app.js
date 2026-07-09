@@ -243,47 +243,24 @@ function formatDate(d) {
   return d.toLocaleDateString("vi-VN");
 }
 
-// Nén ảnh về khoảng ~20KB trước khi lưu — giảm dần chất lượng rồi kích thước cho tới khi đạt
-// mục tiêu, để tránh dung lượng lưu trữ (Vercel Blob) phình to nhanh khi tích luỹ ảnh chấm công
-// hàng ngày của nhiều công nhân lâu dài. Dừng lại ở một ngưỡng tối thiểu để ảnh vẫn còn nhận
-// diện được hiện trường, không nén tới mức vô dụng.
-function compressPhoto(file, targetBytes = 20 * 1024) {
+// Nén ảnh: giới hạn kích thước tối đa 400x600px (giữ tỉ lệ khung hình gốc) trước khi lưu,
+// giúp giảm dung lượng lưu trữ (Vercel Blob) khi tích luỹ ảnh chấm công hàng ngày lâu dài.
+function compressPhoto(file) {
   return new Promise((resolve) => {
     const img = new Image();
     const reader = new FileReader();
     reader.onload = () => {
       img.onload = () => {
+        const maxWidth = 400;
+        const maxHeight = 600;
+        const scale = Math.min(1, maxWidth / img.width, maxHeight / img.height);
+
         const canvas = document.createElement("canvas");
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
         const ctx = canvas.getContext("2d");
-
-        const encode = (width, quality) => {
-          const scale = Math.min(1, width / img.width);
-          canvas.width = img.width * scale;
-          canvas.height = img.height * scale;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          return canvas.toDataURL("image/jpeg", quality);
-        };
-
-        let width = 640;
-        let quality = 0.6;
-        let result = encode(width, quality);
-
-        // Base64 dài hơn dữ liệu gốc ~1/3, nhân 0.75 để ước lượng dung lượng thật.
-        let attempts = 0;
-        while (result.length * 0.75 > targetBytes && attempts < 6) {
-          if (quality > 0.35) {
-            quality -= 0.1;
-          } else if (width > 320) {
-            width = Math.round(width * 0.85);
-          } else {
-            break; // đã chạm ngưỡng tối thiểu, chấp nhận kích thước hiện tại
-          }
-          result = encode(width, quality);
-          attempts++;
-        }
-
-        resolve(result);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
       };
       img.onerror = () => resolve(null);
       img.src = reader.result;

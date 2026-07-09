@@ -220,18 +220,38 @@ function compressPhoto(file) {
   });
 }
 
-function getLocation() {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve({ lat: null, lng: null, accuracy: null, note: "Thiết bị không hỗ trợ định vị GPS" });
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, note: null }),
-      () => resolve({ lat: null, lng: null, accuracy: null, note: "Không lấy được vị trí" }),
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+function getPosition(options) {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, options);
   });
+}
+
+// Thử định vị chính xác (GPS vệ tinh) trước; nếu bị từ chối quyền thì báo rõ luôn.
+// Nếu chỉ timeout (thường gặp khi ở trong công trình/nhà che khuất tín hiệu vệ tinh),
+// thử lại lần 2 với định vị theo mạng/wifi — nhanh hơn dù kém chính xác hơn.
+async function getLocation() {
+  if (!navigator.geolocation) {
+    return { lat: null, lng: null, accuracy: null, note: "Thiết bị không hỗ trợ định vị GPS" };
+  }
+
+  try {
+    const pos = await getPosition({ enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+    return { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, note: null };
+  } catch (err) {
+    if (err.code === err.PERMISSION_DENIED) {
+      return { lat: null, lng: null, accuracy: null, note: "Chưa cấp quyền vị trí cho trình duyệt — vào Cài đặt bật lại quyền vị trí" };
+    }
+  }
+
+  try {
+    const pos = await getPosition({ enableHighAccuracy: false, timeout: 10000, maximumAge: 0 });
+    return { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, note: null };
+  } catch (err) {
+    const note = err.code === err.TIMEOUT
+      ? "Hết thời gian chờ định vị — thử lại ở nơi thoáng hơn (gần cửa sổ/ngoài trời)"
+      : "Không xác định được vị trí";
+    return { lat: null, lng: null, accuracy: null, note };
+  }
 }
 
 async function finishCheck(type, photo) {

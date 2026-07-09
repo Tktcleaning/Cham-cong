@@ -141,6 +141,11 @@ button, input { font-family: inherit; font-size: inherit; }
   cursor: pointer;
 }
 .change-hint { font-size: 16px; font-weight: 600; color: var(--gold); }
+.project-badge:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.project-badge:disabled .change-hint { visibility: hidden; }
 
 /* ---------- Đồng hồ ---------- */
 .clock-box { text-align: center; padding: 28px 20px 8px; }

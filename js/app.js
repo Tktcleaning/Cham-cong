@@ -132,6 +132,18 @@ btnLogin.addEventListener("click", async () => {
     }
 
     setUser({ phone, employeeId, fullName: data.fullName || "", projects: data.projects || [] });
+
+    // Nếu vừa đăng xuất khi đang trong ca rồi đăng nhập lại, khôi phục đúng công trình đang làm
+    // dở thay vì bắt chọn lại — tránh vào ca 1 nơi nhưng tan ca ở nơi khác.
+    if (getTodayStatus(phone) === "in") {
+      const lastProject = getLastInProjectToday(phone);
+      if (lastProject && lastProject.id) {
+        setCurrentProject(lastProject);
+        enterMainView();
+        return;
+      }
+    }
+
     renderProjectList();
     showView("project");
   } catch (err) {
@@ -154,6 +166,7 @@ document.getElementById("btn-project-logout").addEventListener("click", logout);
 // ---------- Chọn dự án ----------
 const projectList = document.getElementById("project-list");
 const labelProject = document.getElementById("label-project");
+const btnChangeProject = document.getElementById("btn-change-project");
 
 function renderProjectList() {
   const user = getUser();
@@ -179,7 +192,14 @@ function renderProjectList() {
   });
 }
 
-document.getElementById("btn-change-project").addEventListener("click", () => {
+btnChangeProject.addEventListener("click", () => {
+  const user = getUser();
+  // Đang trong ca (đã vào ca, chưa tan ca) thì không cho đổi công trình khác — tránh vào ca ở
+  // công trình này nhưng lại tan ca ở công trình khác, gây sai lệch dữ liệu chấm công.
+  if (user && getTodayStatus(user.phone) === "in") {
+    alert("Bạn đang trong ca làm việc. Vui lòng bấm TAN CA ở công trình hiện tại trước khi đổi sang công trình khác.");
+    return;
+  }
   renderProjectList();
   showView("project");
 });
@@ -220,6 +240,17 @@ function getTodayStatus(phone) {
   return records[0].type; // "in" hoặc "out", records đã unshift nên [0] là mới nhất
 }
 
+// Công trình của lần "vào ca" gần nhất trong ngày (khi đang trong ca) — dùng để khôi phục
+// đúng công trình đang làm dở nếu công nhân lỡ đăng xuất rồi đăng nhập lại giữa ca.
+function getLastInProjectToday(phone) {
+  const today = new Date().toDateString();
+  const records = getUserRecords(phone).filter(
+    r => new Date(r.timestamp).toDateString() === today
+  );
+  if (records.length === 0 || records[0].type !== "in") return null;
+  return { id: records[0].projectId, name: records[0].projectName };
+}
+
 function refreshStatus() {
   const user = getUser();
   if (!user) return;
@@ -230,11 +261,13 @@ function refreshStatus() {
     statusText.textContent = "ĐANG TRONG CA";
     btnCheckIn.disabled = true;
     btnCheckOut.disabled = false;
+    btnChangeProject.disabled = true;
   } else {
     statusBanner.className = "status-banner status-off";
     statusText.textContent = "CHƯA VÀO CA";
     btnCheckIn.disabled = false;
     btnCheckOut.disabled = true;
+    btnChangeProject.disabled = false;
   }
 }
 

@@ -60,6 +60,8 @@ Nếu nhân viên chưa có dòng nào trong tab này, app sẽ báo "Bạn chư
 
 Mỗi lần bấm **VÀO CA** hoặc **TAN CA** là một lần gửi riêng biệt lên `api/checkin.js` — tức 1 ca làm ra 2 dòng dữ liệu (1 dòng vào, 1 dòng ra), không gộp chung.
 
+**Khoá công trình khi đang trong ca:** sau khi VÀO CA, nút "Đổi dự án" bị vô hiệu hoá cho tới khi bấm TAN CA — tránh trường hợp vào ca ở công trình này nhưng tan ca ở công trình khác (đã từng xảy ra ở bản trước, gây sai lệch dữ liệu). Nếu công nhân lỡ đăng xuất khi đang trong ca rồi đăng nhập lại, app tự khôi phục đúng công trình đang làm dở (đọc từ bản ghi VÀO CA gần nhất trong ngày) thay vì bắt chọn lại.
+
 **Ảnh chụp không lưu trực tiếp trong Sheet** (mỗi ô Sheet giới hạn ~50.000 ký tự, ảnh nén xong ở dạng base64 vẫn thường vượt mức đó), và **cũng không lưu ở Google Drive** — service account của Google không có dung lượng lưu trữ riêng trên Drive cá nhân/gmail thường (chỉ tài khoản Google Workspace trả phí mới dùng được Shared Drive để né giới hạn này). Thay vào đó: ảnh được **upload lên Vercel Blob** (dịch vụ lưu file của chính Vercel, không dính giới hạn của Google), Sheet chỉ lưu link ảnh đó — link ở chế độ **public** (chuỗi ngẫu nhiên dài, không đoán được nếu không có link, nhưng ai có link đều xem được, giống hệt cách link Google Drive hoạt động).
 
 **File Sheet riêng cho chấm công** (khác với file "Danh sách nhân viên" dùng cho đăng nhập — tách riêng để dễ quản lý). Tên file gợi ý: `Ghi_nhan_cham_cong`, tab tên `ChamCong`, dòng 1 là tiêu đề:

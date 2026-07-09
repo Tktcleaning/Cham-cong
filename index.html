@@ -76,7 +76,10 @@
 
   <p id="gps-status" class="gps-status">📍 Đang chờ chấm công...</p>
 
-  <button id="btn-history" class="btn btn-secondary btn-large">XEM LỊCH SỬ</button>
+  <div class="secondary-action-area">
+    <button id="btn-history" class="btn btn-secondary">XEM LỊCH SỬ</button>
+    <button id="btn-forgot" class="btn btn-secondary">QUÊN CHẤM CÔNG</button>
+  </div>
 </section>
 
 <!-- input ẩn để mở thẳng app Camera của điện thoại -->
@@ -92,6 +95,26 @@
 
   <div id="history-list" class="history-list">
     <p class="empty-text">Chưa có dữ liệu chấm công.</p>
+  </div>
+</section>
+
+<!-- MÀN HÌNH BÁO QUÊN CHẤM CÔNG -->
+<section id="view-forgot" class="view">
+  <header class="topbar">
+    <button id="btn-forgot-back" class="btn-icon" title="Quay lại">⬅️</button>
+    <div class="user-name">Báo quên chấm công</div>
+    <div style="width:44px"></div>
+  </header>
+
+  <div class="login-box">
+    <label for="input-forgot-reason">Lý do quên chấm công</label>
+    <textarea id="input-forgot-reason" rows="4" placeholder="Ví dụ: Điện thoại hết pin lúc vào ca"></textarea>
+
+    <label for="input-forgot-manager">Tên người quản lý trực tiếp</label>
+    <input type="text" id="input-forgot-manager" placeholder="Ví dụ: Anh Nam" autocomplete="off">
+
+    <button id="btn-forgot-submit" class="btn btn-primary btn-large">GỬI BÁO CÁO</button>
+    <p id="forgot-error" class="error-text"></p>
   </div>
 </section>
 

@@ -71,6 +71,15 @@ Nhớ **share file Sheet chấm công này** cho đúng `client_email` của ser
 
 Nếu gửi lên server thất bại (ảnh vẫn lưu tạm trong `localStorage` máy công nhân), app sẽ báo "Đã lưu tạm trên máy, chưa gửi được lên hệ thống công ty" — hiện chưa có cơ chế tự động gửi lại, cần làm thêm nếu cần độ tin cậy cao hơn.
 
+## Báo quên chấm công
+
+Nút **QUÊN CHẤM CÔNG** cạnh nút Xem lịch sử ở màn hình chính — dùng khi công nhân quên bấm vào ca/tan ca (không cần chụp ảnh hay GPS, chỉ là báo cáo bằng chữ để công ty đối chiếu). Nhập lý do quên + tên quản lý trực tiếp, gửi qua `api/forgot.js` vào tab **`QuenChamCong`** (cùng file Sheet chấm công `Ghi_nhan_cham_cong`, tự tạo thêm — không dùng chung tab `ChamCong` vì đây là báo cáo tự khai, không phải dữ liệu chấm công đã xác minh GPS).
+
+**Cấu trúc tab `QuenChamCong`** (dòng 1 là tiêu đề, không cần biến môi trường mới — dùng chung `GOOGLE_ATTENDANCE_SHEET_ID`):
+
+| Thời Gian Báo Cáo | Số Điện Thoại | Mã Nhân Viên | Họ Tên | Dự Án | Lý Do Quên | Người Quản Lý |
+|---|---|---|---|---|---|---|
+
 ## Trình duyệt khuyến nghị cho công nhân
 
 - **iPhone (iOS): dùng Safari.** Đã test kỹ, chạy ổn định — chụp ảnh + lấy GPS đều mượt.

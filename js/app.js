@@ -28,6 +28,7 @@ const view = {
   project: document.getElementById("view-project"),
   main: document.getElementById("view-main"),
   history: document.getElementById("view-history"),
+  forgot: document.getElementById("view-forgot"),
 };
 
 function showView(name) {
@@ -448,6 +449,73 @@ document.getElementById("btn-history").addEventListener("click", () => {
 document.getElementById("btn-back").addEventListener("click", () => {
   refreshStatus();
   showView("main");
+});
+
+// ---------- Báo quên chấm công ----------
+const inputForgotReason = document.getElementById("input-forgot-reason");
+const inputForgotManager = document.getElementById("input-forgot-manager");
+const forgotError = document.getElementById("forgot-error");
+const btnForgotSubmit = document.getElementById("btn-forgot-submit");
+
+document.getElementById("btn-forgot").addEventListener("click", () => {
+  inputForgotReason.value = "";
+  inputForgotManager.value = "";
+  forgotError.textContent = "";
+  showView("forgot");
+});
+document.getElementById("btn-forgot-back").addEventListener("click", () => {
+  showView("main");
+});
+
+btnForgotSubmit.addEventListener("click", async () => {
+  const reason = inputForgotReason.value.trim();
+  const managerName = inputForgotManager.value.trim();
+
+  if (!reason) {
+    forgotError.textContent = "Vui lòng nhập lý do quên chấm công.";
+    return;
+  }
+  if (!managerName) {
+    forgotError.textContent = "Vui lòng nhập tên người quản lý trực tiếp.";
+    return;
+  }
+
+  forgotError.textContent = "";
+  btnForgotSubmit.disabled = true;
+  btnForgotSubmit.textContent = "ĐANG GỬI...";
+
+  const user = getUser();
+  const project = getCurrentProject();
+
+  try {
+    const res = await fetch("/api/forgot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: user.phone,
+        employeeId: user.employeeId,
+        fullName: user.fullName || "",
+        projectName: project ? project.name : "",
+        reason,
+        managerName,
+        timestamp: new Date().toISOString(),
+      }),
+    });
+    const data = await res.json();
+
+    if (!data.ok) {
+      forgotError.textContent = data.message || "Gửi báo cáo thất bại, vui lòng thử lại.";
+      return;
+    }
+
+    alert("Đã gửi báo cáo quên chấm công tới công ty.");
+    showView("main");
+  } catch (err) {
+    forgotError.textContent = "Không kết nối được máy chủ, vui lòng thử lại.";
+  } finally {
+    btnForgotSubmit.disabled = false;
+    btnForgotSubmit.textContent = "GỬI BÁO CÁO";
+  }
 });
 
 // ---------- Khởi động ----------

@@ -273,13 +273,10 @@ async function getLocation() {
   }
 }
 
-async function finishCheck(type, photo) {
+async function finishCheck(type, photo, loc) {
   const user = getUser();
   const project = getCurrentProject();
   const now = new Date();
-
-  overlayText.textContent = "Đang lấy vị trí GPS...";
-  const loc = await getLocation();
 
   const record = {
     phone: user.phone,
@@ -323,9 +320,16 @@ cameraInput.addEventListener("change", async () => {
   if (!file || !pendingCheckType) return; // người dùng huỷ chụp hình
 
   overlayLoading.classList.add("active");
-  overlayText.textContent = "Đang xử lý ảnh...";
-  const photo = await compressPhoto(file);
-  await finishCheck(pendingCheckType, photo);
+  overlayText.textContent = "Đang xử lý ảnh và vị trí...";
+
+  // Xin vị trí ngay lập tức, chạy song song với nén ảnh — không chờ nén ảnh xong mới xin,
+  // vì để trễ dễ khiến Chrome trên iOS "treo" luôn việc lấy vị trí sau khi vừa quay lại từ app Camera.
+  const [photo, loc] = await Promise.all([
+    compressPhoto(file),
+    getLocation(),
+  ]);
+
+  await finishCheck(pendingCheckType, photo, loc);
   pendingCheckType = null;
 });
 

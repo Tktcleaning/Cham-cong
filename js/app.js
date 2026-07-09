@@ -226,6 +226,12 @@ function getPosition(options) {
   });
 }
 
+// "CriOS" chỉ xuất hiện trong user agent của Chrome khi chạy trên iOS (dùng engine WebKit của Apple,
+// khác với Chrome trên Android dùng engine Blink gốc — không bị hạn chế định vị như trên iOS).
+function isChromeOnIOS() {
+  return /CriOS/.test(navigator.userAgent);
+}
+
 // Một số trình duyệt (vd Chrome trên iOS) đôi khi không tự gọi callback thành công/thất bại
 // đúng như "timeout" khai báo trong options — treo vô thời hạn. Nên luôn bọc thêm một
 // đồng hồ đếm giờ độc lập ở phía code của mình để chắc chắn luôn thoát ra được.
@@ -266,9 +272,17 @@ async function getLocation() {
     );
     return { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, note: null };
   } catch (err) {
-    const note = err.code === 3 /* TIMEOUT */
-      ? "Hết thời gian chờ định vị — thử lại ở nơi thoáng hơn (gần cửa sổ/ngoài trời)"
-      : "Không xác định được vị trí";
+    let note;
+    if (err.code === 3 /* TIMEOUT */) {
+      // Chrome trên iPhone chạy trên engine WebKit của Apple (không phải engine gốc của Chrome)
+      // và hay bị treo/timeout khi lấy vị trí ngay sau khi quay lại từ app Camera — hạn chế riêng
+      // của Chrome-iOS, không xảy ra với Chrome trên Android hay Safari trên iPhone.
+      note = isChromeOnIOS()
+        ? "Chrome trên iPhone không lấy được vị trí — vui lòng dùng Safari để chấm công"
+        : "Hết thời gian chờ định vị — thử lại ở nơi thoáng hơn (gần cửa sổ/ngoài trời)";
+    } else {
+      note = "Không xác định được vị trí";
+    }
     return { lat: null, lng: null, accuracy: null, note };
   }
 }

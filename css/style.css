@@ -1,4 +1,12 @@
-/* Chấm Công TKT Cleaning — giao diện tối giản cho người lớn tuổi (50+) */
+/* Chấm Công TKT Company — giao diện tối giản cho người lớn tuổi (50+) */
+
+:root {
+  --gold-dark: #8a6d1c;
+  --gold: #d1ac2a;
+  --gold-mid: #e0c468;
+  --gold-light: #f0dfa3;
+  --gold-pale: #fbf3dc;
+}
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -27,9 +35,10 @@ button, input { font-family: inherit; font-size: inherit; }
   padding: 32px 28px;
   text-align: center;
 }
-.logo { font-size: 64px; }
-.login-box h1 { font-size: 30px; color: #1b5e20; margin-top: 8px; }
-.subtitle { font-size: 20px; color: #555; margin-bottom: 28px; }
+.logo { width: 96px; height: 96px; object-fit: contain; }
+.login-box h1 { font-size: 30px; color: var(--gold-dark); margin-top: 8px; }
+.subtitle { font-size: 20px; color: #555; margin-bottom: 4px; }
+.slogan { font-size: 15px; color: #888; font-style: italic; margin-bottom: 24px; }
 
 .login-box label {
   display: block;
@@ -44,13 +53,13 @@ button, input { font-family: inherit; font-size: inherit; }
   width: 100%;
   padding: 16px;
   font-size: 22px;
-  border: 2px solid #c8e6c9;
+  border: 2px solid var(--gold-light);
   border-radius: 12px;
   background: #fff;
 }
 .login-box textarea { resize: vertical; }
 .login-box input:focus,
-.login-box textarea:focus { outline: none; border-color: #4caf50; }
+.login-box textarea:focus { outline: none; border-color: var(--gold); }
 
 .error-text {
   color: #c62828;
@@ -71,8 +80,8 @@ button, input { font-family: inherit; font-size: inherit; }
 .btn-large { padding: 20px; font-size: 24px; margin-top: 24px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.btn-primary { background: linear-gradient(135deg, #4caf50, #1b5e20); color: #fff; }
-.btn-secondary { background: #fff; color: #1b5e20; border: 2px solid #4caf50; }
+.btn-primary { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: #fff; }
+.btn-secondary { background: #fff; color: var(--gold-dark); border: 2px solid var(--gold); }
 
 .btn-icon {
   width: 44px; height: 44px;
@@ -89,7 +98,7 @@ button, input { font-family: inherit; font-size: inherit; }
   background: #fff;
   border-bottom: 1px solid #e0e0e0;
 }
-.user-name { font-size: 22px; font-weight: 700; color: #1b5e20; }
+.user-name { font-size: 22px; font-weight: 700; color: var(--gold-dark); }
 .user-phone { font-size: 17px; color: #666; }
 
 /* ---------- Chọn dự án ---------- */
@@ -104,17 +113,17 @@ button, input { font-family: inherit; font-size: inherit; }
   width: 100%;
   text-align: left;
   background: #fff;
-  border: 2px solid #c8e6c9;
+  border: 2px solid var(--gold-light);
   border-radius: 14px;
   padding: 20px 18px;
   margin-bottom: 14px;
   font-size: 22px;
   font-weight: 700;
-  color: #1b5e20;
+  color: var(--gold-dark);
   cursor: pointer;
 }
-.project-item:active { background: #e8f5e9; border-color: #4caf50; }
-.project-item.selected { background: #4caf50; color: #fff; border-color: #1b5e20; }
+.project-item:active { background: var(--gold-pale); border-color: var(--gold); }
+.project-item.selected { background: var(--gold); color: #fff; border-color: var(--gold-dark); }
 
 /* ---------- Huy hiệu dự án đang chọn (màn hình chính) ---------- */
 .project-badge {
@@ -124,15 +133,15 @@ button, input { font-family: inherit; font-size: inherit; }
   width: calc(100% - 40px);
   margin: 14px 20px 0;
   padding: 14px 18px;
-  background: #e8f5e9;
+  background: var(--gold-pale);
   border: none;
   border-radius: 12px;
   font-size: 19px;
   font-weight: 700;
-  color: #1b5e20;
+  color: var(--gold-dark);
   cursor: pointer;
 }
-.change-hint { font-size: 16px; font-weight: 600; color: #4caf50; }
+.change-hint { font-size: 16px; font-weight: 600; color: var(--gold); }
 
 /* ---------- Đồng hồ ---------- */
 .clock-box { text-align: center; padding: 28px 20px 8px; }
@@ -150,7 +159,7 @@ button, input { font-family: inherit; font-size: inherit; }
   letter-spacing: 0.5px;
 }
 .status-off { background: #eeeeee; color: #616161; }
-.status-on { background: linear-gradient(135deg, #a5d6a7, #4caf50); color: #fff; }
+.status-on { background: linear-gradient(135deg, var(--gold-mid), var(--gold)); color: #fff; }
 
 /* ---------- Khu vực nút chấm công ---------- */
 .action-area {
@@ -173,7 +182,7 @@ button, input { font-family: inherit; font-size: inherit; }
   cursor: pointer;
 }
 .btn-icon-big { font-size: 40px; }
-.btn-checkin { background: linear-gradient(135deg, #66bb6a, #1b5e20); }
+.btn-checkin { background: linear-gradient(135deg, var(--gold-mid), var(--gold-dark)); }
 .btn-checkout { background: linear-gradient(135deg, #ef5350, #b71c1c); }
 .btn-checkin:disabled, .btn-checkout:disabled { background: #cfd8dc; color: #78909c; }
 
@@ -204,7 +213,7 @@ button, input { font-family: inherit; font-size: inherit; }
   border-radius: 14px;
   padding: 16px 18px;
   margin-bottom: 12px;
-  border-left: 8px solid #4caf50;
+  border-left: 8px solid var(--gold);
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 .history-item.out { border-left-color: #e53935; }
@@ -221,7 +230,7 @@ button, input { font-family: inherit; font-size: inherit; }
 }
 .history-item .row-3 {
   font-size: 16px;
-  color: #1b5e20;
+  color: var(--gold-dark);
   font-weight: 600;
   margin-top: 4px;
 }
@@ -254,8 +263,8 @@ button, input { font-family: inherit; font-size: inherit; }
 .spinner {
   width: 48px; height: 48px;
   margin: 0 auto;
-  border: 5px solid #c8e6c9;
-  border-top-color: #1b5e20;
+  border: 5px solid var(--gold-light);
+  border-top-color: var(--gold-dark);
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
 }

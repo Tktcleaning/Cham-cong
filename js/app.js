@@ -1,5 +1,5 @@
 /*
- * Chấm Công TKT Cleaning.
+ * Chấm Công TKT Company.
  * Dữ liệu chấm công (kể cả ảnh chụp) gửi thật lên Google Sheet + Vercel Blob qua api/checkin.js,
  * đồng thời giữ thêm 1 bản sao trong localStorage làm dự phòng nếu gửi server thất bại.
  * Đăng nhập: kiểm tra thật qua Google Sheet danh sách nhân viên (xem api/login.js), có khoá theo "mã máy"

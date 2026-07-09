@@ -1,4 +1,4 @@
-# Chấm Công TKT Cleaning
+# Chấm Công TKT Company
 
 Ứng dụng chấm công cho công nhân vệ sinh công trình — đăng nhập bằng số điện thoại, ghi nhận giờ vào/ra kèm định vị GPS. Chạy được cả trên trình duyệt máy tính và điện thoại (PWA — có thể "Thêm vào Màn hình chính" trên Android/iOS).
 
@@ -8,6 +8,10 @@
 - **Dữ liệu chấm công (ảnh, giờ, GPS):** gửi thật lên Google Sheet + Vercel Blob (ảnh) của công ty qua `api/checkin.js` — xem mục "Đồng bộ dữ liệu chấm công" bên dưới. Vẫn giữ thêm 1 bản sao trong `localStorage` làm dự phòng nếu gửi lên server thất bại (mất mạng...).
 - **Danh sách công trình mỗi nhân viên:** lấy thật từ Sheet "PhanCong" riêng, trả về kèm lúc đăng nhập — xem mục "Phân công công trình" bên dưới.
 - **Định vị:** dùng `navigator.geolocation` của trình duyệt, cần HTTPS (hoặc localhost) và người dùng cho phép quyền vị trí.
+
+## Thương hiệu
+
+Logo (`icons/logo.png`, dùng luôn cho icon PWA `icon-192.png`/`icon-512.png`) lấy từ file gốc `Logo-TKT-Company-144x144.png` của công ty — đây là bản độ phân giải cao nhất hiện có với đúng mẫu logo "TKT Company" toàn vàng, nên các icon 192/512px được phóng to từ đây (không có bản gốc lớn hơn). Tông màu chủ đạo của app lấy đúng màu vàng logo (`#d1ac2a`, biến CSS `--gold` trong `css/style.css`) thay cho tông xanh lá trước đây; nút TAN CA vẫn giữ màu đỏ (không đổi) vì đó là màu chức năng phân biệt vào ca/tan ca, không phải màu thương hiệu.
 
 ## Đăng nhập & khoá thiết bị (chống chấm công hộ)
 
@@ -99,4 +103,3 @@ npx serve Cham_Cong
 1. **Trang quản trị cho công ty** — xem báo cáo chấm công của tất cả công nhân trực tiếp qua Google Sheet hiện tại, hoặc xây thêm giao diện lọc/xuất Excel riêng theo công trình nếu cần.
 2. **Kiểm tra vị trí công trình** — so khớp GPS chấm công với toạ độ công trình được giao (tránh chấm công sai địa điểm).
 3. **Tự động gửi lại khi mất mạng** — hiện nếu gửi `api/checkin.js` thất bại, dữ liệu chỉ nằm trong `localStorage` máy công nhân, chưa có cơ chế tự đồng bộ lại khi có mạng trở lại.
-4. **Icon/logo chính thức** — `icons/icon-192.png` và `icon-512.png` hiện là placeholder ("CC"), cần thay bằng logo TKT Cleaning thật.

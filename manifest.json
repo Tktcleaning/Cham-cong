@@ -1,10 +1,10 @@
 {
-  "name": "Chấm Công TKT Cleaning",
+  "name": "Chấm Công TKT Company",
   "short_name": "Chấm Công",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f5f5f5",
-  "theme_color": "#1b5e20",
+  "theme_color": "#8a6d1c",
   "orientation": "portrait",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },

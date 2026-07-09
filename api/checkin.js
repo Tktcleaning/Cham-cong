@@ -1,11 +1,10 @@
-const { Readable } = require("stream");
 const { google } = require("googleapis");
+const { put } = require("@vercel/blob");
 const { getAuth } = require("./_lib/google");
 
-const SCOPES = [
-  "https://www.googleapis.com/auth/spreadsheets",
-  "https://www.googleapis.com/auth/drive",
-];
+// Chỉ cần quyền Sheets — ảnh chấm công lưu ở Vercel Blob, không dùng Google Drive nữa
+// (service account của Google không có dung lượng lưu trữ riêng trên Drive cá nhân/gmail thường).
+const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
 // Tab "ChamCong": Thời Gian | SĐT | Mã NV | Họ Tên | Loại | Dự Án | Vĩ Độ | Kinh Độ | Link Ảnh
 const SHEET_RANGE = "ChamCong!A:I";
@@ -14,15 +13,6 @@ function dataUrlToBuffer(dataUrl) {
   const match = /^data:(.+);base64,(.*)$/.exec(dataUrl || "");
   if (!match) return null;
   return { mimeType: match[1], buffer: Buffer.from(match[2], "base64") };
-}
-
-async function uploadPhoto(drive, folderId, buffer, mimeType, filename) {
-  const { data } = await drive.files.create({
-    requestBody: { name: filename, parents: [folderId] },
-    media: { mimeType, body: Readable.from(buffer) },
-    fields: "id, webViewLink",
-  });
-  return data.webViewLink || "";
 }
 
 module.exports = async (req, res) => {
@@ -42,19 +32,20 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const auth = getAuth(SCOPES);
-    const sheets = google.sheets({ version: "v4", auth });
-    const drive = google.drive({ version: "v3", auth });
+    const sheets = google.sheets({ version: "v4", auth: getAuth(SCOPES) });
     const sheetId = process.env.GOOGLE_ATTENDANCE_SHEET_ID;
-    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
     let photoLink = "";
-    if (photo && folderId) {
+    if (photo) {
       const parsed = dataUrlToBuffer(photo);
       if (parsed) {
         const safeTime = timestamp.replace(/[:.]/g, "-");
         const filename = `${phone}_${type}_${safeTime}.jpg`;
-        photoLink = await uploadPhoto(drive, folderId, parsed.buffer, parsed.mimeType, filename);
+        const blob = await put(filename, parsed.buffer, {
+          access: "public",
+          contentType: parsed.mimeType,
+        });
+        photoLink = blob.url;
       }
     }
 

@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@vercel/blob": "^2.6.1",
     "googleapis": "^173.0.0"
   }
 }

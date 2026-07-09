@@ -3,10 +3,19 @@ const { google } = require("googleapis");
 // Sheet "NhanVien": cột A Họ Tên | B Số Điện Thoại | C Mã Nhân Viên | D Mã Máy. Dòng 1 là tiêu đề.
 const SHEET_RANGE = "NhanVien!A2:D";
 
+// Đọc cả file JSON key của service account dưới dạng base64 trong 1 biến môi trường duy nhất
+// (GOOGLE_SERVICE_ACCOUNT_KEY_BASE64) — tránh phải copy-paste tay chuỗi private_key nhiều dòng
+// dễ bị lỗi lệch ký tự khi dán vào ô env var của Vercel.
 function getAuth() {
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64;
+  if (!raw) {
+    throw new Error("Thiếu biến môi trường GOOGLE_SERVICE_ACCOUNT_KEY_BASE64");
+  }
+  const keyJson = JSON.parse(Buffer.from(raw, "base64").toString("utf-8"));
+
   return new google.auth.JWT({
-    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    key: (process.env.GOOGLE_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
+    email: keyJson.client_email,
+    key: keyJson.private_key,
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
 }

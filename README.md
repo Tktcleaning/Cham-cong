@@ -29,11 +29,14 @@
 4. **Công ty "reset" khi nhân viên đổi điện thoại:** chỉ cần mở Sheet, xoá giá trị ô Mã Máy của nhân viên đó — không cần sửa code.
 
 **Biến môi trường cần cấu hình trên Vercel** (Project Settings → Environment Variables — không commit vào git):
-- `GOOGLE_SERVICE_ACCOUNT_EMAIL` — email dạng `...@...iam.gserviceaccount.com` từ file JSON key của service account.
-- `GOOGLE_PRIVATE_KEY` — chuỗi `private_key` từ file JSON key (giữ nguyên các ký tự `\n`).
+- `GOOGLE_SERVICE_ACCOUNT_KEY_BASE64` — **toàn bộ file JSON key** của service account, encode base64 thành 1 chuỗi. Cách lấy (PowerShell, thay đường dẫn file cho đúng):
+  ```powershell
+  [Convert]::ToBase64String([IO.File]::ReadAllBytes("$HOME\Downloads\ten-file-key.json")) | Set-Clipboard
+  ```
+  Lệnh trên copy thẳng kết quả vào clipboard — chỉ cần dán (Ctrl+V) vào ô giá trị trên Vercel, không cần chỉnh sửa gì. Cách này tránh việc copy-paste tay chuỗi `private_key` nhiều dòng dễ bị lệch ký tự.
 - `GOOGLE_SHEET_ID` — lấy từ URL của Google Sheet, đoạn giữa `/d/` và `/edit`.
 
-Nhớ chia sẻ (Share) Google Sheet cho đúng email service account ở trên với quyền **Editor**, nếu không hàm sẽ báo lỗi không đọc/ghi được.
+Nhớ chia sẻ (Share) Google Sheet cho đúng `client_email` trong file JSON key (dạng `...@...iam.gserviceaccount.com`) với quyền **Editor**, nếu không hàm sẽ báo lỗi không đọc/ghi được.
 
 ## Trình duyệt khuyến nghị cho công nhân
 

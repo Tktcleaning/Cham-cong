@@ -36,8 +36,8 @@ button, input { font-family: inherit; font-size: inherit; }
   text-align: center;
 }
 .logo { width: 96px; height: 96px; object-fit: contain; }
-.subtitle { font-size: 20px; color: #555; margin-top: 12px; margin-bottom: 4px; }
-.slogan { font-size: 15px; color: #888; font-style: italic; margin-bottom: 24px; }
+.slogan { font-size: 15px; color: #888; font-style: italic; margin-top: 8px; margin-bottom: 4px; }
+.subtitle { font-size: 30px; font-weight: 700; color: #333; margin-bottom: 24px; }
 
 .login-box label {
   display: block;

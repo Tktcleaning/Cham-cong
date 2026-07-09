@@ -4,8 +4,8 @@ const { getAuth } = require("./_lib/google");
 // Cùng 1 file Sheet, 2 tab khác nhau:
 // "NhanVien": cột A Họ Tên | B Số Điện Thoại | C Mã Nhân Viên | D Mã Máy. Dòng 1 là tiêu đề.
 const SHEET_RANGE = "NhanVien!A2:D";
-// "PhanCong": cột A Mã Nhân Viên | B Mã Công Trình | C Tên Công Trình.
-const ASSIGNMENT_RANGE = "PhanCong!A2:C";
+// "Phancong": cột A Họ Tên | B Mã Nhân Viên | C Mã Công Trình | D Tên Công Trình.
+const ASSIGNMENT_RANGE = "Phancong!A2:D";
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
 module.exports = async (req, res) => {
@@ -70,8 +70,8 @@ module.exports = async (req, res) => {
     });
     const assignRows = assignData.values || [];
     const projects = assignRows
-      .filter(r => (r[0] || "").trim().toLowerCase() === employeeId.trim().toLowerCase())
-      .map(r => ({ id: (r[1] || "").trim(), name: (r[2] || "").trim() }))
+      .filter(r => (r[1] || "").trim().toLowerCase() === employeeId.trim().toLowerCase())
+      .map(r => ({ id: (r[2] || "").trim(), name: (r[3] || "").trim() }))
       .filter(p => p.id && p.name);
 
     res.status(200).json({ ok: true, fullName, projects });

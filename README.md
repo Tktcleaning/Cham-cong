@@ -9,6 +9,15 @@
 - **Danh sách công trình mỗi nhân viên:** lấy thật từ Sheet "PhanCong" riêng, trả về kèm lúc đăng nhập — xem mục "Phân công công trình" bên dưới.
 - **Định vị:** dùng `navigator.geolocation` của trình duyệt, cần HTTPS (hoặc localhost) và người dùng cho phép quyền vị trí.
 
+## Tự động cập nhật bản mới, không cần xoá cache
+
+Trước đây `sw.js` (Service Worker cho PWA) dùng chiến lược "cache trước" (cache-first) — sau khi deploy bản mới, trình duyệt vẫn trung thành phục vụ bản cũ đã lưu cho tới khi người dùng tự xoá lịch sử/cache, điều mà công nhân lớn tuổi không biết cách làm. Đã sửa với 3 lớp phòng thủ:
+1. `sw.js` đổi sang chiến lược "mạng trước" (network-first) — luôn lấy bản mới nhất từ server khi có mạng, chỉ dùng bản cache khi mất mạng.
+2. `sw.js` gọi `self.skipWaiting()` + `self.clients.claim()` để service worker mới giành quyền điều khiển ngay, không cần đóng hết các tab đang mở.
+3. `js/app.js` lắng nghe sự kiện `controllerchange` và tự `location.reload()` khi service worker mới vừa giành quyền — trang tự làm mới, không cần người dùng thao tác gì.
+
+Ngoài ra `vercel.json` đặt header `Cache-Control: no-cache, must-revalidate` cho `index.html`, `sw.js`, `manifest.json`, `css/style.css`, `js/app.js` — chặn luôn việc trình duyệt tự cache các file này ở tầng HTTP (độc lập với Service Worker), một lớp phòng thủ nữa để đảm bảo luôn kiểm tra bản mới nhất.
+
 ## Thương hiệu
 
 Logo (`icons/logo.png`, dùng luôn cho icon PWA `icon-192.png`/`icon-512.png`) lấy từ file gốc `Logo-TKT-Company-144x144.png` của công ty — đây là bản độ phân giải cao nhất hiện có với đúng mẫu logo "TKT Company" toàn vàng, nên các icon 192/512px được phóng to từ đây (không có bản gốc lớn hơn). Tông màu chủ đạo của app lấy đúng màu vàng logo (`#d1ac2a`, biến CSS `--gold` trong `css/style.css`) thay cho tông xanh lá trước đây; nút TAN CA vẫn giữ màu đỏ (không đổi) vì đó là màu chức năng phân biệt vào ca/tan ca, không phải màu thương hiệu.

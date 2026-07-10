@@ -1,0 +1,16 @@
+{
+  "headers": [
+    {
+      "source": "/(index.html|sw.js|manifest.json)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/(css/style.css|js/app.js)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+      ]
+    }
+  ]
+}

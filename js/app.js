@@ -586,4 +586,13 @@ btnForgotSubmit.addEventListener("click", async () => {
 // PWA: đăng ký service worker (bỏ qua lỗi nếu chạy từ file:// hoặc không hỗ trợ)
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   navigator.serviceWorker.register("sw.js").catch(() => {});
+
+  // Khi service worker mới (bản deploy mới hơn) giành quyền điều khiển trang, tự tải lại trang
+  // ngay để hiển thị bản mới nhất — công nhân không cần biết cách xoá cache trình duyệt.
+  let refreshingAfterUpdate = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshingAfterUpdate) return;
+    refreshingAfterUpdate = true;
+    location.reload();
+  });
 }

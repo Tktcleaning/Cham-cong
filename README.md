@@ -1,6 +1,6 @@
 # Chấm Công TKT Company
 
-Ứng dụng chấm công cho công nhân vệ sinh công trình — đăng nhập bằng số điện thoại, ghi nhận giờ vào/ra kèm định vị GPS. Chạy được cả trên trình duyệt máy tính và điện thoại (PWA — có thể "Thêm vào Màn hình chính" trên Android/iOS). Cỡ chữ toàn app đã tăng lớn (base 26px thay vì 20px) để phù hợp người lao động lớn tuổi.
+Ứng dụng chấm công cho công nhân vệ sinh công trình — đăng nhập bằng số điện thoại, ghi nhận giờ vào/ra kèm định vị GPS. Chạy được cả trên trình duyệt máy tính và điện thoại (PWA — có thể "Thêm vào Màn hình chính" trên Android/iOS).
 
 **Hộp thoại thông báo riêng của app:** toàn bộ `alert()` gốc của trình duyệt (không tuỳ biến được nút) đã thay bằng hộp thoại tự viết (`showAlert()` trong `js/app.js`, HTML ở `#overlay-alert`) — nút "Đóng" cỡ lớn, tiếng Việt, đúng phong cách app.
 

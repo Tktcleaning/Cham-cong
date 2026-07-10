@@ -11,6 +11,7 @@ const STORAGE_USER = "chamcong_user";
 const STORAGE_RECORDS = "chamcong_records";
 const STORAGE_PROJECT = "chamcong_current_project";
 const STORAGE_DEVICE = "chamcong_device_id";
+const STORAGE_REMEMBERED = "chamcong_remembered_login";
 
 // "Mã máy": vì là ứng dụng web nên không lấy được ID phần cứng thật — tạo 1 mã ngẫu nhiên
 // duy nhất lưu trong trình duyệt ngay lần đầu mở app, dùng để khoá 1 SĐT+mã NV vào 1 thiết bị.
@@ -48,6 +49,17 @@ function setUser(user) {
 function clearUser() {
   localStorage.removeItem(STORAGE_USER);
   localStorage.removeItem(STORAGE_PROJECT);
+}
+
+// Nhớ SĐT + mã NV lần đăng nhập gần nhất (kể cả sau khi đăng xuất) để lần sau khỏi nhập lại —
+// app không cần bảo mật cao nên ưu tiên tiện dụng hơn.
+function rememberLogin(phone, employeeId) {
+  localStorage.setItem(STORAGE_REMEMBERED, JSON.stringify({ phone, employeeId }));
+}
+
+function getRememberedLogin() {
+  const raw = localStorage.getItem(STORAGE_REMEMBERED);
+  return raw ? JSON.parse(raw) : null;
 }
 
 function getCurrentProject() {
@@ -101,6 +113,14 @@ const inputEmployee = document.getElementById("input-employee");
 const loginError = document.getElementById("login-error");
 const btnLogin = document.getElementById("btn-login");
 
+function fillRememberedLoginInputs() {
+  const remembered = getRememberedLogin();
+  if (remembered) {
+    inputPhone.value = remembered.phone || "";
+    inputEmployee.value = remembered.employeeId || "";
+  }
+}
+
 btnLogin.addEventListener("click", async () => {
   const phone = inputPhone.value.trim();
   const employeeId = inputEmployee.value.trim();
@@ -132,6 +152,7 @@ btnLogin.addEventListener("click", async () => {
     }
 
     setUser({ phone, employeeId, fullName: data.fullName || "", projects: data.projects || [] });
+    rememberLogin(phone, employeeId);
 
     // Nếu vừa đăng xuất khi đang trong ca rồi đăng nhập lại, khôi phục đúng công trình đang làm
     // dở thay vì bắt chọn lại — tránh vào ca 1 nơi nhưng tan ca ở nơi khác.
@@ -156,8 +177,8 @@ btnLogin.addEventListener("click", async () => {
 
 function logout() {
   clearUser();
-  inputPhone.value = "";
-  inputEmployee.value = "";
+  // Không xoá SĐT/mã NV đã nhớ — app ưu tiên tiện dụng hơn bảo mật, để lần đăng nhập sau đỡ gõ lại.
+  fillRememberedLoginInputs();
   showView("login");
 }
 document.getElementById("btn-logout").addEventListener("click", logout);
@@ -557,6 +578,7 @@ btnForgotSubmit.addEventListener("click", async () => {
   if (user) {
     enterMainView();
   } else {
+    fillRememberedLoginInputs();
     showView("login");
   }
 })();

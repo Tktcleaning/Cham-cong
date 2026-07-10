@@ -33,6 +33,8 @@ Logo (`icons/logo.png`, dùng luôn cho icon PWA `icon-192.png`/`icon-512.png`) 
    - Thấy, Mã Máy khớp → cho vào bình thường.
 4. **Công ty "reset" khi nhân viên đổi điện thoại:** chỉ cần mở Sheet, xoá giá trị ô Mã Máy của nhân viên đó — không cần sửa code.
 
+**Nhớ SĐT/mã NV kể cả sau khi đăng xuất:** app ưu tiên tiện dụng hơn bảo mật (dùng nội bộ công ty, không phải app ngân hàng) — bấm đăng xuất (🚪) chỉ kết thúc phiên đăng nhập hiện tại, KHÔNG xoá ô SĐT/mã NV đã nhập lần gần nhất. Lần đăng nhập sau sẽ tự điền sẵn 2 ô này, chỉ cần bấm ĐĂNG NHẬP lại (lưu riêng trong `localStorage`, tách biệt với phiên đăng nhập đang hoạt động).
+
 **Biến môi trường cần cấu hình trên Vercel** (Project Settings → Environment Variables — không commit vào git):
 - `GOOGLE_SERVICE_ACCOUNT_KEY_BASE64` — **toàn bộ file JSON key** của service account, encode base64 thành 1 chuỗi. Cách lấy (PowerShell, thay đường dẫn file cho đúng):
   ```powershell

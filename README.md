@@ -67,6 +67,16 @@ Mỗi nhân viên chỉ thấy đúng các công trình được phân công cho
 
 Nếu nhân viên chưa có dòng nào trong tab này, app sẽ báo "Bạn chưa được phân công công trình nào" ở màn hình chọn công trình thay vì crash hay hiện danh sách rỗng khó hiểu.
 
+**Lưu ý dữ liệu:** Mã Công Trình phải **duy nhất cho mỗi công trình** — nếu 2 công trình khác tên nhưng lỡ dùng chung 1 mã, app sẽ không phân biệt được (cả 2 cùng bị đánh dấu "đã chọn", và bấm vào cái nào cũng chỉ ghi nhận đúng 1 cái đầu tiên khớp mã). Đây là lỗi dữ liệu, không phải lỗi code — cần rà soát để đảm bảo mỗi Mã Công Trình chỉ ứng với đúng 1 Tên Công Trình.
+
+## Tính giờ làm mỗi ca
+
+Khi bấm **TAN CA**, app tự tính:
+- Thời gian của **ca vừa hoàn thành** (từ lần VÀO CA gần nhất tới lúc TAN CA này) — lưu kèm vào bản ghi lịch sử (`workedMs`, chỉ tính cho local `localStorage`, **không gửi lên Google Sheet**), hiện ở màn "Xem lịch sử" tại đúng dòng Tan ca đó (`🕐 Đã làm: X giờ Y phút`).
+- **Tổng thời gian đã làm trong ngày** (cộng dồn tất cả các ca vào-ra trọn vẹn trong ngày, kể cả ca vừa xong) — hiện trong hộp thoại thông báo ngay sau khi tan ca ("Bạn đã làm trong ngày hôm nay: X giờ Y phút. Cảm ơn và chúc bạn một ngày tốt lành!"), sau đó tự chuyển về màn hình chọn công trình.
+
+Cả 2 con số đều tính từ dữ liệu `localStorage` trên máy, không phải từ Sheet — nếu công nhân đổi thiết bị giữa các ca trong cùng ngày, tổng giờ hiển thị sẽ không đầy đủ (chỉ tính các ca chấm công trên đúng thiết bị hiện tại).
+
 ## Đồng bộ dữ liệu chấm công
 
 Mỗi lần bấm **VÀO CA** hoặc **TAN CA** là một lần gửi riêng biệt lên `api/checkin.js` — tức 1 ca làm ra 2 dòng dữ liệu (1 dòng vào, 1 dòng ra), không gộp chung.

@@ -272,6 +272,46 @@ function getLastInProjectToday(phone) {
   return { id: records[0].projectId, name: records[0].projectName };
 }
 
+// Thời điểm "vào ca" đang mở (chưa có "tan ca" đi kèm) trong ngày hôm nay — dùng để tính thời
+// gian của ca vừa hoàn thành ngay khi bấm TAN CA.
+function getOpenInTimestampToday(phone) {
+  const today = new Date().toDateString();
+  const records = getUserRecords(phone).filter(
+    r => new Date(r.timestamp).toDateString() === today
+  );
+  const lastIn = records.find(r => r.type === "in"); // records mới nhất ở đầu
+  return lastIn ? new Date(lastIn.timestamp) : null;
+}
+
+// Tổng thời gian của các ca đã hoàn thành trọn vẹn (đủ cặp vào-ra) trong ngày hôm nay,
+// CHƯA tính ca vừa tan (gọi trước khi lưu bản ghi "tan ca" mới).
+function getCompletedWorkMsToday(phone) {
+  const today = new Date().toDateString();
+  const records = getUserRecords(phone)
+    .filter(r => new Date(r.timestamp).toDateString() === today)
+    .slice()
+    .reverse(); // đổi sang thứ tự thời gian tăng dần
+
+  let totalMs = 0;
+  let openIn = null;
+  for (const r of records) {
+    if (r.type === "in") {
+      openIn = new Date(r.timestamp);
+    } else if (r.type === "out" && openIn) {
+      totalMs += new Date(r.timestamp) - openIn;
+      openIn = null;
+    }
+  }
+  return totalMs;
+}
+
+function formatDurationVN(ms) {
+  const totalMinutes = Math.max(0, Math.round(ms / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours} giờ ${minutes} phút`;
+}
+
 function refreshStatus() {
   const user = getUser();
   if (!user) return;
@@ -398,6 +438,16 @@ async function finishCheck(type, photo, loc) {
   const project = getCurrentProject();
   const now = new Date();
 
+  // Tính thời gian ca vừa hoàn thành và tổng thời gian đã làm trong ngày — phải tính TRƯỚC khi
+  // lưu bản ghi "tan ca" mới, vì cần tìm bản ghi "vào ca" đang mở dựa trên các bản ghi đã có.
+  let shiftMs = null;
+  let todayTotalMs = null;
+  if (type === "out") {
+    const openIn = getOpenInTimestampToday(user.phone);
+    shiftMs = openIn ? (now - openIn) : 0;
+    todayTotalMs = getCompletedWorkMsToday(user.phone) + shiftMs;
+  }
+
   const record = {
     phone: user.phone,
     employeeId: user.employeeId,
@@ -408,6 +458,7 @@ async function finishCheck(type, photo, loc) {
     timestamp: now.toISOString(),
     lat: loc.lat, lng: loc.lng, accuracy: loc.accuracy,
     photo: photo || null,
+    workedMs: shiftMs,
   };
 
   saveRecord(record);
@@ -421,6 +472,12 @@ async function finishCheck(type, photo, loc) {
   if (!sent) parts.push("⚠️ Đã lưu tạm trên máy, chưa gửi được lên hệ thống công ty (sẽ thử lại sau)");
   if (loc.note) parts.push(`⚠️ ${loc.note}`);
   gpsStatus.textContent = parts.join(" — ");
+
+  if (type === "out") {
+    alert(`Bạn đã làm trong ngày hôm nay: ${formatDurationVN(todayTotalMs)}.\nCảm ơn và chúc bạn một ngày tốt lành!`);
+    renderProjectList();
+    showView("project");
+  }
 }
 
 // VÀO CA / TAN CA: đều mở camera điện thoại chụp hình hiện trường trước, rồi mới lấy vị trí và lưu.
@@ -486,11 +543,15 @@ function renderHistory() {
       ? `📍 ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}`
       : "📍 Không có vị trí";
     const photoHtml = r.photo ? `<img class="photo-thumb" src="${r.photo}" alt="Ảnh công trình">` : "";
+    const durationHtml = (r.type === "out" && r.workedMs != null)
+      ? `<div class="row-3">🕐 Đã làm: ${formatDurationVN(r.workedMs)}</div>`
+      : "";
     return `
       <div class="history-item ${r.type === "out" ? "out" : ""}">
         <div class="row-1"><span>${typeLabel}</span><span>${formatTime(d)}</span></div>
         <div class="row-2">${formatDate(d)} · ${locLabel}</div>
         <div class="row-3">🏗️ ${r.projectName || "Không rõ công trình"}</div>
+        ${durationHtml}
         ${photoHtml}
       </div>`;
   }).join("");

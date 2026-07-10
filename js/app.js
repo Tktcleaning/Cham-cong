@@ -37,6 +37,29 @@ function showView(name) {
   view[name].classList.add("active");
 }
 
+// Hộp thoại thông báo riêng của app (thay cho alert() gốc trình duyệt) — cho phép tuỳ biến
+// nút "Đóng" to, tiếng Việt, đúng phong cách app thay vì nút mặc định của trình duyệt.
+const overlayAlert = document.getElementById("overlay-alert");
+const alertMessage = document.getElementById("alert-message");
+const btnAlertClose = document.getElementById("btn-alert-close");
+let alertResolve = null;
+
+function showAlert(message) {
+  return new Promise(resolve => {
+    alertMessage.textContent = message;
+    overlayAlert.classList.add("active");
+    alertResolve = resolve;
+  });
+}
+
+btnAlertClose.addEventListener("click", () => {
+  overlayAlert.classList.remove("active");
+  if (alertResolve) {
+    alertResolve();
+    alertResolve = null;
+  }
+});
+
 function getUser() {
   const raw = localStorage.getItem(STORAGE_USER);
   return raw ? JSON.parse(raw) : null;
@@ -218,7 +241,7 @@ btnChangeProject.addEventListener("click", () => {
   // Đang trong ca (đã vào ca, chưa tan ca) thì không cho đổi công trình khác — tránh vào ca ở
   // công trình này nhưng lại tan ca ở công trình khác, gây sai lệch dữ liệu chấm công.
   if (user && getTodayStatus(user.phone) === "in") {
-    alert("Bạn đang trong ca làm việc. Vui lòng bấm TAN CA ở công trình hiện tại trước khi đổi sang công trình khác.");
+    showAlert("Bạn đang trong ca làm việc. Vui lòng bấm TAN CA ở công trình hiện tại trước khi đổi sang công trình khác.");
     return;
   }
   renderProjectList();
@@ -474,7 +497,7 @@ async function finishCheck(type, photo, loc) {
   gpsStatus.textContent = parts.join(" — ");
 
   if (type === "out") {
-    alert(`Bạn đã làm trong ngày hôm nay: ${formatDurationVN(todayTotalMs)}.\nCảm ơn và chúc bạn một ngày tốt lành!`);
+    await showAlert(`Bạn đã làm trong ngày hôm nay: ${formatDurationVN(todayTotalMs)}.\nCảm ơn và chúc bạn một ngày tốt lành!`);
     renderProjectList();
     showView("project");
   }
@@ -623,7 +646,7 @@ btnForgotSubmit.addEventListener("click", async () => {
       return;
     }
 
-    alert("Đã gửi báo cáo quên chấm công tới công ty.");
+    await showAlert("Đã gửi báo cáo quên chấm công tới công ty.");
     showView("main");
   } catch (err) {
     forgotError.textContent = "Không kết nối được máy chủ, vui lòng thử lại.";

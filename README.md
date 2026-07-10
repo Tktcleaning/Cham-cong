@@ -73,11 +73,11 @@ Nếu nhân viên chưa có dòng nào trong tab này, app sẽ báo "Bạn chư
 
 ## Tính giờ làm mỗi ca
 
-Khi bấm **TAN CA**, app tự tính:
-- Thời gian của **ca vừa hoàn thành** (từ lần VÀO CA gần nhất tới lúc TAN CA này) — lưu kèm vào bản ghi lịch sử (`workedMs`, chỉ tính cho local `localStorage`, **không gửi lên Google Sheet**), hiện ở màn "Xem lịch sử" tại đúng dòng Tan ca đó (`🕐 Đã làm: X giờ Y phút`).
-- **Tổng thời gian đã làm trong ngày** (cộng dồn tất cả các ca vào-ra trọn vẹn trong ngày, kể cả ca vừa xong) — hiện trong hộp thoại thông báo ngay sau khi tan ca ("Bạn đã làm trong ngày hôm nay: X giờ Y phút. Cảm ơn và chúc bạn một ngày tốt lành!"), sau đó tự chuyển về màn hình chọn công trình.
+Khi bấm **TAN CA**, app tự tính thời gian của **ca vừa hoàn thành** (từ lần VÀO CA gần nhất tới lúc TAN CA này) — dùng chung 1 giá trị cho cả 2 nơi để khớp nhau:
+- Lưu kèm vào bản ghi lịch sử (`workedMs`, chỉ tính cho local `localStorage`, **không gửi lên Google Sheet**), hiện ở màn "Xem lịch sử" tại đúng dòng Tan ca đó (`🕐 Đã làm: X giờ Y phút`).
+- Hiện trong hộp thoại thông báo ngay sau khi tan ca ("Bạn đã làm trong ngày hôm nay: X giờ Y phút. Cảm ơn và chúc bạn một ngày tốt lành!"), sau đó tự chuyển về màn hình chọn công trình.
 
-Cả 2 con số đều tính từ dữ liệu `localStorage` trên máy, không phải từ Sheet — nếu công nhân đổi thiết bị giữa các ca trong cùng ngày, tổng giờ hiển thị sẽ không đầy đủ (chỉ tính các ca chấm công trên đúng thiết bị hiện tại).
+**Lưu ý:** đây là thời gian của RIÊNG ca vừa xong, không phải tổng cộng dồn nếu trong ngày có nhiều ca vào-ra (bản đầu tiên từng cộng dồn cả ngày, gây lệch số với Lịch sử khi test nhiều ca liên tiếp — đã bỏ). Tính từ dữ liệu `localStorage` trên máy, không phải từ Sheet — nếu công nhân đổi thiết bị giữa ca, thời gian hiển thị sẽ không tính được đúng (không tìm thấy bản ghi VÀO CA tương ứng trên thiết bị mới).
 
 ## Đồng bộ dữ liệu chấm công
 

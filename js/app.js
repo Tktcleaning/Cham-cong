@@ -306,28 +306,6 @@ function getOpenInTimestampToday(phone) {
   return lastIn ? new Date(lastIn.timestamp) : null;
 }
 
-// Tổng thời gian của các ca đã hoàn thành trọn vẹn (đủ cặp vào-ra) trong ngày hôm nay,
-// CHƯA tính ca vừa tan (gọi trước khi lưu bản ghi "tan ca" mới).
-function getCompletedWorkMsToday(phone) {
-  const today = new Date().toDateString();
-  const records = getUserRecords(phone)
-    .filter(r => new Date(r.timestamp).toDateString() === today)
-    .slice()
-    .reverse(); // đổi sang thứ tự thời gian tăng dần
-
-  let totalMs = 0;
-  let openIn = null;
-  for (const r of records) {
-    if (r.type === "in") {
-      openIn = new Date(r.timestamp);
-    } else if (r.type === "out" && openIn) {
-      totalMs += new Date(r.timestamp) - openIn;
-      openIn = null;
-    }
-  }
-  return totalMs;
-}
-
 function formatDurationVN(ms) {
   const totalMinutes = Math.max(0, Math.round(ms / 60000));
   const hours = Math.floor(totalMinutes / 60);
@@ -461,14 +439,12 @@ async function finishCheck(type, photo, loc) {
   const project = getCurrentProject();
   const now = new Date();
 
-  // Tính thời gian ca vừa hoàn thành và tổng thời gian đã làm trong ngày — phải tính TRƯỚC khi
-  // lưu bản ghi "tan ca" mới, vì cần tìm bản ghi "vào ca" đang mở dựa trên các bản ghi đã có.
+  // Tính thời gian ca vừa hoàn thành — phải tính TRƯỚC khi lưu bản ghi "tan ca" mới, vì cần tìm
+  // bản ghi "vào ca" đang mở dựa trên các bản ghi đã có.
   let shiftMs = null;
-  let todayTotalMs = null;
   if (type === "out") {
     const openIn = getOpenInTimestampToday(user.phone);
     shiftMs = openIn ? (now - openIn) : 0;
-    todayTotalMs = getCompletedWorkMsToday(user.phone) + shiftMs;
   }
 
   const record = {
@@ -497,7 +473,7 @@ async function finishCheck(type, photo, loc) {
   gpsStatus.textContent = parts.join(" — ");
 
   if (type === "out") {
-    await showAlert(`Bạn đã làm trong ngày hôm nay: ${formatDurationVN(todayTotalMs)}.\nCảm ơn và chúc bạn một ngày tốt lành!`);
+    await showAlert(`Bạn đã làm trong ngày hôm nay: ${formatDurationVN(shiftMs)}.\nCảm ơn và chúc bạn một ngày tốt lành!`);
     renderProjectList();
     showView("project");
   }

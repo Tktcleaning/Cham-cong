@@ -561,8 +561,9 @@ document.getElementById("btn-history").addEventListener("click", () => {
   showView("history");
 });
 document.getElementById("btn-back").addEventListener("click", () => {
-  refreshStatus();
-  showView("main");
+  // Nút "Xem lịch sử" giờ nằm ở màn Chọn công trình, nên quay lại đúng màn đó thay vì màn chính.
+  renderProjectList();
+  showView("project");
 });
 
 // ---------- Báo quên chấm công ----------

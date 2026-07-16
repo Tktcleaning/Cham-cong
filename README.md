@@ -81,6 +81,18 @@ Khi bấm **TAN CA**, app tự tính thời gian của **ca vừa hoàn thành**
 
 **Lưu ý:** đây là thời gian của RIÊNG ca vừa xong, không phải tổng cộng dồn nếu trong ngày có nhiều ca vào-ra (bản đầu tiên từng cộng dồn cả ngày, gây lệch số với Lịch sử khi test nhiều ca liên tiếp — đã bỏ). Tính từ dữ liệu `localStorage` trên máy, không phải từ Sheet — nếu công nhân đổi thiết bị giữa ca, thời gian hiển thị sẽ không tính được đúng (không tìm thấy bản ghi VÀO CA tương ứng trên thiết bị mới).
 
+## Bảng lương (file `Bao_cao_cham_cong`, tab `Bang_luong`)
+
+File Sheet riêng thứ 3 (`GOOGLE_PAYROLL_SHEET_ID`), phục vụ báo cáo/tính lương — khác với file `Ghi_nhan_cham_cong` (lưu từng lượt chấm công thô). Cấu trúc tab `Bang_luong` (đã có sẵn, công ty tự tạo): cột A-H là STT/Code/CCCD/Họ tên/Công trình/Kiểu CT/Đơn giá/Mức Lương, cột I-AM là 31 cột ngày (1-31) trong tháng, cột AN trở đi là các cột lương/phụ cấp/khấu trừ do kế toán tự nhập tay (app không đụng tới).
+
+**Luồng ghi (`api/payroll.js`), chỉ chạy khi bấm TAN CA:**
+1. Tính số giờ của ca vừa xong, làm tròn đến 0.5h (`roundToHalfHour()` trong `js/app.js`).
+2. Tìm dòng khớp đúng cặp **Mã Nhân Viên (cột Code) + Tên Công Trình (cột Công trình)** — mỗi cặp NV+công trình có 1 dòng riêng trong tháng (1 nhân viên làm 2 công trình = 2 dòng).
+3. Nếu chưa có dòng nào cho cặp này trong tháng → thêm dòng mới (STT, Code, Họ tên, Công trình), các cột lương/phụ cấp để trống cho kế toán tự nhập.
+4. Ghi số giờ vào đúng cột ngày (cột "9" ứng với ngày 9 trong tháng, tính từ `now.getDate()`) — nếu ô đó đã có giờ sẵn (nhiều ca cùng ngày cùng công trình) thì **cộng dồn** thay vì ghi đè.
+
+**Lưu ý:** file/tab này không có cột tháng/năm — mặc định chỉ dùng cho 1 tháng tại 1 thời điểm (công ty tự tạo file/tab mới mỗi tháng theo quy trình riêng, app không tự động xử lý việc này).
+
 ## Đồng bộ dữ liệu chấm công
 
 Mỗi lần bấm **VÀO CA** hoặc **TAN CA** là một lần gửi riêng biệt lên `api/checkin.js` — tức 1 ca làm ra 2 dòng dữ liệu (1 dòng vào, 1 dòng ra), không gộp chung.

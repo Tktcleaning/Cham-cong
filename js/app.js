@@ -130,6 +130,27 @@ async function sendToServer(record) {
   }
 }
 
+// Ghi số giờ làm (tròn 0.5h) vào đúng cột ngày + đúng dòng nhân viên-công trình trong bảng lương
+// — chỉ gọi khi TAN CA, vì lúc đó mới biết tổng số giờ của ca vừa hoàn thành.
+function roundToHalfHour(ms) {
+  const hours = ms / 3600000;
+  return Math.round(hours * 2) / 2;
+}
+
+async function sendToPayroll({ employeeId, fullName, projectName, day, hours }) {
+  try {
+    const res = await fetch("/api/payroll", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ employeeId, fullName, projectName, day, hours }),
+    });
+    const data = await res.json();
+    return data.ok === true;
+  } catch (err) {
+    return false;
+  }
+}
+
 // ---------- Đăng nhập ----------
 const inputPhone = document.getElementById("input-phone");
 const inputEmployee = document.getElementById("input-employee");
@@ -520,12 +541,26 @@ async function finishCheck(type, photo, loc) {
   saveRecord(record);
   overlayText.textContent = "Đang gửi dữ liệu lên hệ thống...";
   const sent = await sendToServer(record);
+
+  let payrollSent = true;
+  if (type === "out") {
+    overlayText.textContent = "Đang cập nhật bảng lương...";
+    payrollSent = await sendToPayroll({
+      employeeId: user.employeeId,
+      fullName: user.fullName || "",
+      projectName: effectiveProjectName,
+      day: now.getDate(),
+      hours: roundToHalfHour(shiftMs),
+    });
+  }
+
   overlayLoading.classList.remove("active");
   refreshStatus();
 
   const label = type === "in" ? "VÀO CA" : "TAN CA";
   const parts = [`✅ Đã chấm công ${label} lúc ${formatTime(now)}`, `tại ${effectiveProjectName}`];
   if (!sent) parts.push("⚠️ Đã lưu tạm trên máy, chưa gửi được lên hệ thống công ty (sẽ thử lại sau)");
+  if (!payrollSent) parts.push("⚠️ Chưa cập nhật được bảng lương (sẽ cần kiểm tra lại thủ công)");
   if (loc.note) parts.push(`⚠️ ${loc.note}`);
   gpsStatus.textContent = parts.join(" — ");
 

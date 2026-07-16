@@ -275,7 +275,8 @@ function isOtherProject(project) {
 // dùng đúng tên đã được công ty phân công sẵn.
 function getEffectiveProjectName(project) {
   if (!isOtherProject(project)) return project.name;
-  return inputCustomProject.value.trim() || project.name;
+  const typed = inputCustomProject.value.trim();
+  return typed ? `${project.name} : ${typed}` : project.name;
 }
 
 function updateProjectLabel() {
@@ -295,8 +296,12 @@ function updateCustomProjectBox() {
 
   if (getTodayStatus(user.phone) === "in") {
     // Đang trong ca: khoá ô nhập, hiện đúng tên đã dùng lúc vào ca — tránh đổi tên giữa ca.
+    // Bản ghi đã lưu dạng "Công Trình Khác : <tên gõ>" nên cần tách phần tiền tố ra để chỉ
+    // hiện lại đúng phần tên công nhân đã gõ trong ô nhập.
     const openProject = getLastInProjectToday(user.phone);
-    inputCustomProject.value = openProject ? openProject.name : "";
+    const savedName = openProject ? openProject.name : "";
+    const prefix = `${project.name} : `;
+    inputCustomProject.value = savedName.startsWith(prefix) ? savedName.slice(prefix.length) : "";
     inputCustomProject.disabled = true;
   } else {
     inputCustomProject.value = "";

@@ -71,6 +71,8 @@ Nếu nhân viên chưa có dòng nào trong tab này, app sẽ báo "Bạn chư
 
 **Lưu ý dữ liệu:** Mã Công Trình phải **duy nhất cho mỗi công trình** — nếu 2 công trình khác tên nhưng lỡ dùng chung 1 mã, app sẽ không phân biệt được (cả 2 cùng bị đánh dấu "đã chọn", và bấm vào cái nào cũng chỉ ghi nhận đúng 1 cái đầu tiên khớp mã). Đây là lỗi dữ liệu, không phải lỗi code — cần rà soát để đảm bảo mỗi Mã Công Trình chỉ ứng với đúng 1 Tên Công Trình.
 
+**Công trình chưa định tên ("Công Trình Khác"):** nếu 1 dòng trong `Phancong` có Tên Công Trình đúng bằng chữ **"Công Trình Khác"** (không phân biệt hoa/thường), khi nhân viên chọn công trình này ở màn chấm công sẽ hiện thêm ô nhập **"Tên Công Trình"** (ngay dưới đồng hồ giờ/ngày) để tự gõ tên công trình thật đang làm hôm đó — bắt buộc phải nhập mới bấm VÀO CA được. Tên tự gõ này sẽ thay thế "Công Trình Khác" trong toàn bộ dữ liệu lưu (Sheet, lịch sử, huy hiệu công trình). Ô nhập bị khoá lại (không sửa được) trong suốt ca làm để tránh đổi tên giữa ca, tự mở lại sau khi tan ca. Xem `isOtherProject()` / `getEffectiveProjectName()` trong `js/app.js`.
+
 ## Tính giờ làm mỗi ca
 
 Khi bấm **TAN CA**, app tự tính thời gian của **ca vừa hoàn thành** (từ lần VÀO CA gần nhất tới lúc TAN CA này) — dùng chung 1 giá trị cho cả 2 nơi để khớp nhau:

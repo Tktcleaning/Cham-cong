@@ -154,6 +154,28 @@ button, input { font-family: inherit; font-size: inherit; }
 .clock-time { font-size: 52px; font-weight: 800; color: #1a1a1a; letter-spacing: 1px; }
 .clock-date { font-size: 20px; color: #666; margin-top: 4px; }
 
+/* ---------- Ô nhập tên công trình (khi chọn "Công Trình Khác") ---------- */
+.custom-project-box { display: none; margin: 4px 24px 0; }
+.custom-project-box.show { display: block; }
+.custom-project-box label {
+  display: block;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+.custom-project-box input {
+  width: 100%;
+  padding: 14px;
+  font-size: 20px;
+  border: 2px solid var(--gold-light);
+  border-radius: 12px;
+  background: #fff;
+}
+.custom-project-box input:focus { outline: none; border-color: var(--gold); }
+.custom-project-box input:disabled { background: #f0f0f0; color: #666; }
+
 /* ---------- Trạng thái ---------- */
 .status-banner {
   margin: 20px 24px;

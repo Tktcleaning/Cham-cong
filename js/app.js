@@ -259,6 +259,52 @@ const gpsStatus = document.getElementById("gps-status");
 const overlayLoading = document.getElementById("overlay-loading");
 const overlayText = document.getElementById("overlay-text");
 const cameraInput = document.getElementById("camera-input");
+const customProjectBox = document.getElementById("custom-project-box");
+const inputCustomProject = document.getElementById("input-custom-project");
+
+// "Công Trình Khác" là công trình chưa định tên sẵn — công nhân phải tự gõ tên công trình thật
+// vào ô riêng trước khi chấm công, thay vì chọn từ danh sách có sẵn.
+const OTHER_PROJECT_NAME = "Công Trình Khác";
+
+function isOtherProject(project) {
+  return !!project && (project.name || "").trim().toLowerCase() === OTHER_PROJECT_NAME.toLowerCase();
+}
+
+// Tên công trình thực tế dùng để hiển thị/lưu: nếu là "Công Trình Khác" thì lấy tên công nhân tự
+// gõ (đang gõ dở trước khi vào ca, hoặc đã khoá lại từ lúc vào ca nếu đang trong ca); còn lại
+// dùng đúng tên đã được công ty phân công sẵn.
+function getEffectiveProjectName(project) {
+  if (!isOtherProject(project)) return project.name;
+  return inputCustomProject.value.trim() || project.name;
+}
+
+function updateProjectLabel() {
+  const project = getCurrentProject();
+  if (!project) return;
+  labelProject.textContent = `🏗️ ${getEffectiveProjectName(project)}`;
+}
+
+function updateCustomProjectBox() {
+  const user = getUser();
+  const project = getCurrentProject();
+  if (!user || !isOtherProject(project)) {
+    customProjectBox.classList.remove("show");
+    return;
+  }
+  customProjectBox.classList.add("show");
+
+  if (getTodayStatus(user.phone) === "in") {
+    // Đang trong ca: khoá ô nhập, hiện đúng tên đã dùng lúc vào ca — tránh đổi tên giữa ca.
+    const openProject = getLastInProjectToday(user.phone);
+    inputCustomProject.value = openProject ? openProject.name : "";
+    inputCustomProject.disabled = true;
+  } else {
+    inputCustomProject.value = "";
+    inputCustomProject.disabled = false;
+  }
+}
+
+inputCustomProject.addEventListener("input", updateProjectLabel);
 
 function enterMainView() {
   const user = getUser();
@@ -269,7 +315,6 @@ function enterMainView() {
 
   labelEmployee.textContent = user.fullName ? `${user.fullName} (${user.employeeId})` : user.employeeId;
   labelPhone.textContent = user.phone;
-  labelProject.textContent = `🏗️ ${project.name}`;
   refreshStatus();
   showView("main");
 }
@@ -331,6 +376,9 @@ function refreshStatus() {
     btnCheckOut.disabled = true;
     btnChangeProject.disabled = false;
   }
+
+  updateCustomProjectBox();
+  updateProjectLabel();
 }
 
 function formatTime(d) {
@@ -447,12 +495,16 @@ async function finishCheck(type, photo, loc) {
     shiftMs = openIn ? (now - openIn) : 0;
   }
 
+  // Với "Công Trình Khác", dùng đúng tên công nhân đã tự gõ (đọc trước khi refreshStatus() có
+  // thể khoá/xoá lại ô nhập) thay vì tên chung chung "Công Trình Khác".
+  const effectiveProjectName = getEffectiveProjectName(project);
+
   const record = {
     phone: user.phone,
     employeeId: user.employeeId,
     fullName: user.fullName || "",
     projectId: project.id,
-    projectName: project.name,
+    projectName: effectiveProjectName,
     type,
     timestamp: now.toISOString(),
     lat: loc.lat, lng: loc.lng, accuracy: loc.accuracy,
@@ -467,7 +519,7 @@ async function finishCheck(type, photo, loc) {
   refreshStatus();
 
   const label = type === "in" ? "VÀO CA" : "TAN CA";
-  const parts = [`✅ Đã chấm công ${label} lúc ${formatTime(now)}`, `tại ${project.name}`];
+  const parts = [`✅ Đã chấm công ${label} lúc ${formatTime(now)}`, `tại ${effectiveProjectName}`];
   if (!sent) parts.push("⚠️ Đã lưu tạm trên máy, chưa gửi được lên hệ thống công ty (sẽ thử lại sau)");
   if (loc.note) parts.push(`⚠️ ${loc.note}`);
   gpsStatus.textContent = parts.join(" — ");
@@ -483,6 +535,11 @@ async function finishCheck(type, photo, loc) {
 let pendingCheckType = null;
 
 btnCheckIn.addEventListener("click", () => {
+  const project = getCurrentProject();
+  if (isOtherProject(project) && !inputCustomProject.value.trim()) {
+    showAlert("Vui lòng nhập tên công trình trước khi vào ca.");
+    return;
+  }
   pendingCheckType = "in";
   cameraInput.value = "";
   cameraInput.click();

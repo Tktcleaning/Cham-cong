@@ -22,8 +22,10 @@ button, input { font-family: inherit; font-size: inherit; }
 
 .view {
   display: none;
-  min-height: 100vh;
+  min-height: 100vh; /* dự phòng cho trình duyệt cũ chưa hiểu dvh */
+  min-height: 100dvh; /* tính đúng chiều cao thật, trừ thanh địa chỉ/công cụ động của Safari trên iPhone */
   flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .view.active { display: flex; }
 
@@ -204,7 +206,9 @@ button, input { font-family: inherit; font-size: inherit; }
   max-width: 92%;
   margin-left: auto;
   margin-right: auto;
+  margin-bottom: 24px; /* chừa khoảng cách với mép dưới, tránh bị thanh địa chỉ trình duyệt che */
 }
+#btn-history { border-color: #1a1a1a; color: #1a1a1a; }
 
 /* ---------- Lịch sử ---------- */
 .history-list { padding: 16px 20px; flex: 1; overflow-y: auto; }

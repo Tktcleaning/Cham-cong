@@ -1,7 +1,4 @@
 {
-  "functions": {
-    "api/migrate-payroll.js": { "maxDuration": 60 }
-  },
   "headers": [
     {
       "source": "/(index.html|sw.js|manifest.json)",

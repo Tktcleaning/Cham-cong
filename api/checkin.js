@@ -7,8 +7,8 @@ const { toVietnamTimeString } = require("./_lib/time");
 // (service account của Google không có dung lượng lưu trữ riêng trên Drive cá nhân/gmail thường).
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
-// Tab "ChamCong": Thời Gian | SĐT | Mã NV | Họ Tên | Loại | Dự Án | Vĩ Độ | Kinh Độ | Link Ảnh
-const SHEET_RANGE = "ChamCong!A:I";
+// Tab "ChamCong": Thời Gian | SĐT | Mã NV | Họ Tên | Loại | Dự Án | Vĩ Độ | Kinh Độ | Link Ảnh | Ghi Chú
+const SHEET_RANGE = "ChamCong!A:J";
 
 function dataUrlToBuffer(dataUrl) {
   const match = /^data:(.+);base64,(.*)$/.exec(dataUrl || "");
@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
 
   const {
     phone, employeeId, fullName, projectName, type,
-    timestamp, lat, lng, photo,
+    timestamp, lat, lng, photo, note,
   } = req.body || {};
 
   if (!phone || !employeeId || !type || !timestamp) {
@@ -66,6 +66,7 @@ module.exports = async (req, res) => {
           lat != null ? lat : "",
           lng != null ? lng : "",
           photoLink,
+          note || "",
         ]],
       },
     });

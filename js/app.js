@@ -30,6 +30,7 @@ const view = {
   main: document.getElementById("view-main"),
   history: document.getElementById("view-history"),
   forgot: document.getElementById("view-forgot"),
+  makeup: document.getElementById("view-makeup"),
 };
 
 function showView(name) {
@@ -197,20 +198,8 @@ btnLogin.addEventListener("click", async () => {
 
     setUser({ phone, employeeId, fullName: data.fullName || "", projects: data.projects || [] });
     rememberLogin(phone, employeeId);
-
-    // Nếu vừa đăng xuất khi đang trong ca rồi đăng nhập lại, khôi phục đúng công trình đang làm
-    // dở thay vì bắt chọn lại — tránh vào ca 1 nơi nhưng tan ca ở nơi khác.
-    if (getTodayStatus(phone) === "in") {
-      const lastProject = getLastInProjectToday(phone);
-      if (lastProject && lastProject.id) {
-        setCurrentProject(lastProject);
-        enterMainView();
-        return;
-      }
-    }
-
-    renderProjectList();
-    showView("project");
+    routeAfterAuth();
+    return;
   } catch (err) {
     loginError.textContent = "Không kết nối được máy chủ, vui lòng thử lại.";
   } finally {
@@ -282,6 +271,13 @@ const overlayText = document.getElementById("overlay-text");
 const cameraInput = document.getElementById("camera-input");
 const customProjectBox = document.getElementById("custom-project-box");
 const inputCustomProject = document.getElementById("input-custom-project");
+
+// ---------- Bổ sung tan ca bị quên (ca vào còn treo từ ngày trước) ----------
+const makeupInfo = document.getElementById("makeup-info");
+const inputMakeupTime = document.getElementById("input-makeup-time");
+const btnMakeupSubmit = document.getElementById("btn-makeup-submit");
+const makeupError = document.getElementById("makeup-error");
+let currentStaleShift = null;
 
 // "Công Trình Khác" là công trình chưa định tên sẵn — công nhân phải tự gõ tên công trình thật
 // vào ô riêng trước khi chấm công, thay vì chọn từ danh sách có sẵn.
@@ -364,6 +360,56 @@ function getLastInProjectToday(phone) {
   );
   if (records.length === 0 || records[0].type !== "in") return null;
   return { id: records[0].projectId, name: records[0].projectName };
+}
+
+// Bản ghi "vào ca" còn treo (chưa tan ca) từ một NGÀY TRƯỚC (không phải hôm nay) — nghĩa là công
+// nhân đã quên bấm TAN CA. Trả về null nếu ca đang mở là của chính hôm nay (vẫn coi là bình thường).
+function getStaleOpenShift(phone) {
+  const records = getUserRecords(phone); // mới nhất ở đầu
+  if (records.length === 0) return null;
+  const latest = records[0];
+  if (latest.type !== "in") return null;
+  const today = new Date().toDateString();
+  if (new Date(latest.timestamp).toDateString() === today) return null;
+  return latest;
+}
+
+function showMakeupView(staleShift) {
+  currentStaleShift = staleShift;
+  const d = new Date(staleShift.timestamp);
+  makeupInfo.textContent =
+    `Bạn quên bấm TAN CA ngày ${formatDate(d)} tại ${staleShift.projectName} ` +
+    `(đã vào ca lúc ${formatTime(d)}). Vui lòng nhập giờ bạn đã tan ca hôm đó để tiếp tục sử dụng app.`;
+  makeupError.textContent = "";
+  inputMakeupTime.value = "17:00";
+  showView("makeup");
+}
+
+// Cổng điều hướng chung sau khi đã có phiên đăng nhập hợp lệ (gọi từ: đăng nhập thành công,
+// khởi động app khi đã có phiên sẵn, và sau khi vừa xử lý xong tan ca bù) — luôn ưu tiên bắt xử
+// lý ca quên tan ca trước, rồi mới tới các luồng bình thường khác.
+function routeAfterAuth() {
+  const user = getUser();
+  if (!user) { showView("login"); return; }
+
+  const staleShift = getStaleOpenShift(user.phone);
+  if (staleShift) { showMakeupView(staleShift); return; }
+
+  // Nếu vừa đăng xuất khi đang trong ca (hôm nay) rồi đăng nhập lại, khôi phục đúng công trình
+  // đang làm dở thay vì bắt chọn lại — tránh vào ca 1 nơi nhưng tan ca ở nơi khác.
+  if (getTodayStatus(user.phone) === "in") {
+    const lastProject = getLastInProjectToday(user.phone);
+    if (lastProject && lastProject.id) {
+      setCurrentProject(lastProject);
+      enterMainView();
+      return;
+    }
+  }
+
+  const project = getCurrentProject();
+  if (!project) { renderProjectList(); showView("project"); return; }
+
+  enterMainView();
 }
 
 // Thời điểm "vào ca" đang mở (chưa có "tan ca" đi kèm) trong ngày hôm nay — dùng để tính thời
@@ -752,11 +798,76 @@ btnForgotSubmit.addEventListener("click", async () => {
   }
 });
 
+// ---------- Bổ sung tan ca bị quên ----------
+document.getElementById("btn-makeup-logout").addEventListener("click", logout);
+
+btnMakeupSubmit.addEventListener("click", async () => {
+  const timeStr = inputMakeupTime.value;
+  if (!timeStr || !currentStaleShift) {
+    makeupError.textContent = "Vui lòng chọn giờ tan ca.";
+    return;
+  }
+
+  const inDate = new Date(currentStaleShift.timestamp);
+  const [hh, mm] = timeStr.split(":").map(Number);
+  const outDate = new Date(inDate.getFullYear(), inDate.getMonth(), inDate.getDate(), hh, mm, 0);
+
+  if (outDate <= inDate) {
+    makeupError.textContent = `Giờ tan ca phải sau giờ vào ca (${formatTime(inDate)}).`;
+    return;
+  }
+
+  makeupError.textContent = "";
+  btnMakeupSubmit.disabled = true;
+  btnMakeupSubmit.textContent = "ĐANG GỬI...";
+
+  const user = getUser();
+  const staleShift = currentStaleShift;
+  const shiftMs = outDate - inDate;
+  const note = "Bổ sung - quên tan ca";
+
+  const record = {
+    phone: user.phone,
+    employeeId: user.employeeId,
+    fullName: user.fullName || "",
+    projectId: staleShift.projectId,
+    projectName: staleShift.projectName,
+    type: "out",
+    timestamp: outDate.toISOString(),
+    lat: null, lng: null, accuracy: null,
+    photo: null,
+    workedMs: shiftMs,
+    note,
+  };
+
+  saveRecord(record);
+  const sent = await sendToServer(record);
+  const payrollSent = await sendToPayroll({
+    employeeId: user.employeeId,
+    fullName: user.fullName || "",
+    projectName: staleShift.projectName,
+    day: inDate.getDate(), // tính vào đúng ngày gốc đã vào ca, không phải hôm nay
+    hours: roundToHalfHour(shiftMs),
+  });
+
+  btnMakeupSubmit.disabled = false;
+  btnMakeupSubmit.textContent = "XÁC NHẬN TAN CA BÙ";
+  currentStaleShift = null;
+
+  if (!sent || !payrollSent) {
+    await showAlert("Đã lưu tạm trên máy, nhưng chưa gửi được đầy đủ lên hệ thống công ty. Công ty sẽ cần kiểm tra lại thủ công.");
+  } else {
+    await showAlert(`Đã ghi nhận tan ca bù lúc ${formatTime(outDate)} (${formatDurationVN(shiftMs)}). Cảm ơn bạn!`);
+  }
+
+  routeAfterAuth();
+});
+
 // ---------- Khởi động ----------
 (function init() {
   const user = getUser();
   if (user) {
-    enterMainView();
+    routeAfterAuth();
   } else {
     fillRememberedLoginInputs();
     showView("login");

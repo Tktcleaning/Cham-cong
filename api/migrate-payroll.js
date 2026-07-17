@@ -113,11 +113,25 @@ module.exports = async (req, res) => {
       return;
     }
 
-    for (const shift of finalShifts) {
-      await upsertPayrollHours(sheets, payrollSheetId, shift);
+    // Ghi theo từng đợt nhỏ (batch), có nghỉ giữa các lượt trong đợt, để tránh vượt quota
+    // "Read requests per minute" của Google Sheets API (mỗi lượt upsert đọc lại dữ liệu trước
+    // khi ghi) và tránh vượt thời gian chạy tối đa của serverless function.
+    // Gọi lại nhiều lần với ?startFrom=N tăng dần cho tới khi done=true.
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const startFrom = Number(req.query.startFrom || 0);
+    const batchSize = Number(req.query.batchSize || 15);
+    const endAt = Math.min(startFrom + batchSize, finalShifts.length);
+    let written = 0;
+    for (let i = startFrom; i < endAt; i++) {
+      await upsertPayrollHours(sheets, payrollSheetId, finalShifts[i]);
+      written++;
+      if (i < endAt - 1) await sleep(1500);
     }
 
-    res.status(200).json({ dryRun: false, written: finalShifts.length });
+    res.status(200).json({
+      dryRun: false, written, startFrom, nextStartFrom: endAt,
+      total: finalShifts.length, done: endAt >= finalShifts.length,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message, stack: err.stack });

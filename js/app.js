@@ -923,6 +923,7 @@ const employeeFormTitle = document.getElementById("employee-form-title");
 const inputEmpName = document.getElementById("input-emp-name");
 const inputEmpPhone = document.getElementById("input-emp-phone");
 const inputEmpCode = document.getElementById("input-emp-code");
+const inputEmpCccd = document.getElementById("input-emp-cccd");
 const employeeFormError = document.getElementById("employee-form-error");
 const btnEmpSave = document.getElementById("btn-emp-save");
 const btnEmpCancel = document.getElementById("btn-emp-cancel");
@@ -1046,7 +1047,7 @@ function renderEmployeeList(employees) {
     <div class="employee-item">
       <div class="employee-info">
         <div class="employee-name">${escapeHtml(e.fullName)}</div>
-        <div class="employee-meta">SĐT: ${escapeHtml(e.phone)} · Mã NV: ${escapeHtml(e.employeeId)}</div>
+        <div class="employee-meta">SĐT: ${escapeHtml(e.phone)} · Mã NV: ${escapeHtml(e.employeeId)} · CCCD: ${escapeHtml(e.cccd || "chưa có")}</div>
         <div class="employee-device">${e.deviceId ? "🔒 Đã khoá máy" : "🔓 Chưa khoá máy"}</div>
         <div class="employee-projects">
           <div class="employee-projects-title-row">
@@ -1070,7 +1071,7 @@ function renderEmployeeList(employees) {
         </div>
       </div>
       <div class="employee-actions">
-        <button class="btn-emp-edit" data-row="${e.row}" data-name="${escapeHtml(e.fullName)}" data-phone="${escapeHtml(e.phone)}" data-code="${escapeHtml(e.employeeId)}">Sửa</button>
+        <button class="btn-emp-edit" data-row="${e.row}" data-name="${escapeHtml(e.fullName)}" data-phone="${escapeHtml(e.phone)}" data-code="${escapeHtml(e.employeeId)}" data-cccd="${escapeHtml(e.cccd)}">Sửa</button>
         <button class="btn-emp-reset" data-row="${e.row}" ${e.deviceId ? "" : "disabled"}>Reset máy</button>
         <button class="btn-emp-delete" data-row="${e.row}" data-name="${escapeHtml(e.fullName)}">Xoá</button>
       </div>
@@ -1137,6 +1138,7 @@ employeeListEl.addEventListener("click", async (e) => {
     inputEmpName.value = editBtn.dataset.name;
     inputEmpPhone.value = editBtn.dataset.phone;
     inputEmpCode.value = editBtn.dataset.code;
+    inputEmpCccd.value = editBtn.dataset.cccd || "";
     employeeFormError.textContent = "";
     overlayEmployeeForm.classList.add("active");
     return;
@@ -1205,6 +1207,7 @@ btnAddEmployee.addEventListener("click", () => {
   inputEmpName.value = "";
   inputEmpPhone.value = "";
   inputEmpCode.value = "";
+  inputEmpCccd.value = "";
   employeeFormError.textContent = "";
   overlayEmployeeForm.classList.add("active");
 });
@@ -1217,6 +1220,7 @@ btnEmpSave.addEventListener("click", async () => {
   const fullName = inputEmpName.value.trim();
   const phone = inputEmpPhone.value.trim();
   const employeeId = inputEmpCode.value.trim();
+  const cccd = inputEmpCccd.value.trim();
 
   if (!fullName || !employeeId) {
     employeeFormError.textContent = "Vui lòng nhập đầy đủ thông tin.";
@@ -1226,14 +1230,18 @@ btnEmpSave.addEventListener("click", async () => {
     employeeFormError.textContent = "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).";
     return;
   }
+  if (!/^\d{12}$/.test(cccd)) {
+    employeeFormError.textContent = "Số CCCD phải gồm đúng 12 chữ số.";
+    return;
+  }
 
   employeeFormError.textContent = "";
   btnEmpSave.disabled = true;
   btnEmpSave.textContent = "Đang lưu...";
   try {
     const body = editingEmployeeRow
-      ? { action: "edit", row: editingEmployeeRow, fullName, phone, employeeId, deviceId: getDeviceId() }
-      : { action: "add", fullName, phone, employeeId, deviceId: getDeviceId() };
+      ? { action: "edit", row: editingEmployeeRow, fullName, phone, employeeId, cccd, deviceId: getDeviceId() }
+      : { action: "add", fullName, phone, employeeId, cccd, deviceId: getDeviceId() };
     const res = await fetch("/api/admin-employees", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

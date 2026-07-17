@@ -7,8 +7,13 @@ const { getAuth } = require("./_lib/google");
 
 const ADMIN_PHONE = "0123443210";
 const ADMIN_EMPLOYEE_ID = "admin";
-const SHEET_RANGE = "NhanVien!A2:D";
+// Cột E "CCCD" mới thêm — không đụng vào cột D "Mã Máy" (do login.js tự quản lý riêng).
+const SHEET_RANGE = "NhanVien!A2:E";
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
+
+function isValidCccd(s) {
+  return /^\d{12}$/.test((s || "").trim());
+}
 
 module.exports = async (req, res) => {
   try {
@@ -58,6 +63,7 @@ module.exports = async (req, res) => {
           phone: r[1] || "",
           employeeId: r[2] || "",
           deviceId: r[3] || "",
+          cccd: r[4] || "",
           projects: projectsByEmployee[(r[2] || "").trim().toLowerCase()] || [],
         }))
         .filter(e => !(e.phone === ADMIN_PHONE && e.employeeId.toLowerCase() === ADMIN_EMPLOYEE_ID));
@@ -72,8 +78,13 @@ module.exports = async (req, res) => {
         const fullName = (req.body.fullName || "").trim();
         const phone = (req.body.phone || "").trim();
         const employeeId = (req.body.employeeId || "").trim();
+        const cccd = (req.body.cccd || "").trim();
         if (!fullName || !phone || !employeeId) {
           res.status(400).json({ ok: false, message: "Vui lòng nhập đầy đủ thông tin" });
+          return;
+        }
+        if (!isValidCccd(cccd)) {
+          res.status(400).json({ ok: false, message: "Số CCCD phải gồm đúng 12 chữ số" });
           return;
         }
         const dup = rows.some(
@@ -86,9 +97,9 @@ module.exports = async (req, res) => {
         const newRowNumber = rows.length + 2;
         await sheets.spreadsheets.values.update({
           spreadsheetId: sheetId,
-          range: `NhanVien!A${newRowNumber}:D${newRowNumber}`,
+          range: `NhanVien!A${newRowNumber}:E${newRowNumber}`,
           valueInputOption: "RAW",
-          requestBody: { values: [[fullName, phone, employeeId, ""]] },
+          requestBody: { values: [[fullName, phone, employeeId, "", cccd]] },
         });
         res.status(200).json({ ok: true });
         return;
@@ -99,15 +110,27 @@ module.exports = async (req, res) => {
         const fullName = (req.body.fullName || "").trim();
         const phone = (req.body.phone || "").trim();
         const employeeId = (req.body.employeeId || "").trim();
+        const cccd = (req.body.cccd || "").trim();
         if (!row || !fullName || !phone || !employeeId) {
           res.status(400).json({ ok: false, message: "Vui lòng nhập đầy đủ thông tin" });
           return;
         }
+        if (!isValidCccd(cccd)) {
+          res.status(400).json({ ok: false, message: "Số CCCD phải gồm đúng 12 chữ số" });
+          return;
+        }
+        // Ghi riêng cột E (CCCD), không đụng cột D (Mã Máy) đang bị khoá cho nhân viên đó.
         await sheets.spreadsheets.values.update({
           spreadsheetId: sheetId,
           range: `NhanVien!A${row}:C${row}`,
           valueInputOption: "RAW",
           requestBody: { values: [[fullName, phone, employeeId]] },
+        });
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: sheetId,
+          range: `NhanVien!E${row}`,
+          valueInputOption: "RAW",
+          requestBody: { values: [[cccd]] },
         });
         res.status(200).json({ ok: true });
         return;

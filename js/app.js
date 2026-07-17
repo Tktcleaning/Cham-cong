@@ -929,6 +929,61 @@ const btnEmpCancel = document.getElementById("btn-emp-cancel");
 let editingEmployeeRow = null; // null = đang thêm mới, có số = đang sửa đúng dòng đó trong Sheet
 let allEmployees = []; // toàn bộ ~600 nhân viên tải 1 lần, lọc theo tên ngay trên trình duyệt
 
+// ---------- Chọn & phân công công trình (tab CongTrinh -> Phancong) ----------
+const overlayProjectPicker = document.getElementById("overlay-project-picker");
+const inputProjectPickerSearch = document.getElementById("input-project-picker-search");
+const projectPickerListEl = document.getElementById("project-picker-list");
+const btnProjectPickerDone = document.getElementById("btn-project-picker-done");
+
+let projectCatalog = null; // null = chưa tải, mảng = đã tải 1 lần dùng lại cho mọi nhân viên
+let pendingAssignments = {}; // { [employeeRow]: [{projectCode, projectName}, ...] } — chưa lưu lên Sheet
+let currentPickerEmployee = null; // { row, existingCodes: Set } — nhân viên đang mở cửa sổ chọn công trình
+
+async function loadProjectCatalog() {
+  if (projectCatalog) return projectCatalog;
+  try {
+    const res = await fetch(`/api/admin-projects?deviceId=${encodeURIComponent(getDeviceId())}`);
+    const data = await res.json();
+    projectCatalog = data.ok ? data.projects : [];
+  } catch (err) {
+    projectCatalog = [];
+  }
+  return projectCatalog;
+}
+
+function renderProjectPicker() {
+  const term = normalizeVN(inputProjectPickerSearch.value.trim());
+  const pending = pendingAssignments[currentPickerEmployee.row] || [];
+  const excludeCodes = new Set([...currentPickerEmployee.existingCodes, ...pending.map(p => p.projectCode)]);
+  const options = (projectCatalog || []).filter(
+    p => !excludeCodes.has(p.projectCode) && (!term || normalizeVN(p.projectName).includes(term))
+  );
+  if (!options.length) {
+    projectPickerListEl.innerHTML = "<p class='empty-text'>Không còn công trình nào để chọn.</p>";
+    return;
+  }
+  projectPickerListEl.innerHTML = options.map(p => `
+    <button class="project-picker-item" data-code="${escapeHtml(p.projectCode)}" data-name="${escapeHtml(p.projectName)}">${escapeHtml(p.projectName)}</button>
+  `).join("");
+}
+
+inputProjectPickerSearch.addEventListener("input", renderProjectPicker);
+
+projectPickerListEl.addEventListener("click", (e) => {
+  const btn = e.target.closest(".project-picker-item");
+  if (!btn || !currentPickerEmployee) return;
+  const row = currentPickerEmployee.row;
+  pendingAssignments[row] = pendingAssignments[row] || [];
+  pendingAssignments[row].push({ projectCode: btn.dataset.code, projectName: btn.dataset.name });
+  renderProjectPicker();
+});
+
+btnProjectPickerDone.addEventListener("click", () => {
+  overlayProjectPicker.classList.remove("active");
+  currentPickerEmployee = null;
+  applySearchFilter(); // vẽ lại thẻ nhân viên để hiện các công trình vừa chọn (chưa lưu)
+});
+
 document.getElementById("btn-admin-logout").addEventListener("click", logout);
 
 function escapeHtml(s) {
@@ -985,20 +1040,33 @@ function renderEmployeeList(employees) {
     employeeListEl.innerHTML = "<p class='empty-text'>Không tìm thấy nhân viên nào.</p>";
     return;
   }
-  employeeListEl.innerHTML = employees.map(e => `
+  employeeListEl.innerHTML = employees.map(e => {
+    const pending = pendingAssignments[e.row] || [];
+    return `
     <div class="employee-item">
       <div class="employee-info">
         <div class="employee-name">${escapeHtml(e.fullName)}</div>
         <div class="employee-meta">SĐT: ${escapeHtml(e.phone)} · Mã NV: ${escapeHtml(e.employeeId)}</div>
         <div class="employee-device">${e.deviceId ? "🔒 Đã khoá máy" : "🔓 Chưa khoá máy"}</div>
         <div class="employee-projects">
-          <div class="employee-projects-title">Công trình đang làm:</div>
-          ${e.projects.length ? e.projects.map(p => `
+          <div class="employee-projects-title-row">
+            <span class="employee-projects-title">Công trình đang làm:</span>
+            <button class="btn-project-add" data-row="${e.row}" data-name="${escapeHtml(e.fullName)}" data-code="${escapeHtml(e.employeeId)}" title="Thêm công trình">+</button>
+          </div>
+          ${e.projects.map(p => `
             <div class="project-row">
               <span>${escapeHtml(p.projectName)}</span>
               <button class="btn-project-delete" data-row="${p.row}" data-name="${escapeHtml(p.projectName)}">Xoá</button>
             </div>
-          `).join("") : '<div class="project-row-empty">Chưa được phân công công trình nào</div>'}
+          `).join("")}
+          ${(!e.projects.length && !pending.length) ? '<div class="project-row-empty">Chưa được phân công công trình nào</div>' : ""}
+          ${pending.map((p, idx) => `
+            <div class="project-row project-row-pending">
+              <span>${escapeHtml(p.projectName)} (chưa lưu)</span>
+              <button class="btn-pending-remove" data-emp-row="${e.row}" data-idx="${idx}">Bỏ</button>
+            </div>
+          `).join("")}
+          ${pending.length ? `<button class="btn-assign-commit" data-row="${e.row}" data-name="${escapeHtml(e.fullName)}" data-code="${escapeHtml(e.employeeId)}">PHÂN CÔNG (${pending.length})</button>` : ""}
         </div>
       </div>
       <div class="employee-actions">
@@ -1007,7 +1075,8 @@ function renderEmployeeList(employees) {
         <button class="btn-emp-delete" data-row="${e.row}" data-name="${escapeHtml(e.fullName)}">Xoá</button>
       </div>
     </div>
-  `).join("");
+  `;
+  }).join("");
 }
 
 employeeListEl.addEventListener("click", async (e) => {
@@ -1015,6 +1084,52 @@ employeeListEl.addEventListener("click", async (e) => {
   const resetBtn = e.target.closest(".btn-emp-reset");
   const deleteBtn = e.target.closest(".btn-emp-delete");
   const projectDeleteBtn = e.target.closest(".btn-project-delete");
+  const projectAddBtn = e.target.closest(".btn-project-add");
+  const pendingRemoveBtn = e.target.closest(".btn-pending-remove");
+  const assignCommitBtn = e.target.closest(".btn-assign-commit");
+
+  if (projectAddBtn) {
+    const row = Number(projectAddBtn.dataset.row);
+    const emp = allEmployees.find(x => x.row === row);
+    currentPickerEmployee = { row, existingCodes: new Set((emp ? emp.projects : []).map(p => p.projectCode)) };
+    inputProjectPickerSearch.value = "";
+    await loadProjectCatalog();
+    renderProjectPicker();
+    overlayProjectPicker.classList.add("active");
+    return;
+  }
+
+  if (pendingRemoveBtn) {
+    const empRow = Number(pendingRemoveBtn.dataset.empRow);
+    const idx = Number(pendingRemoveBtn.dataset.idx);
+    if (pendingAssignments[empRow]) pendingAssignments[empRow].splice(idx, 1);
+    applySearchFilter();
+    return;
+  }
+
+  if (assignCommitBtn) {
+    const row = Number(assignCommitBtn.dataset.row);
+    const employeeFullName = assignCommitBtn.dataset.name;
+    const employeeId = assignCommitBtn.dataset.code;
+    const projects = pendingAssignments[row] || [];
+    if (!projects.length) return;
+    assignCommitBtn.disabled = true;
+    assignCommitBtn.textContent = "Đang lưu...";
+    try {
+      const res = await fetch("/api/admin-projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "assign", employeeFullName, employeeId, projects, deviceId: getDeviceId() }),
+      });
+      const data = await res.json();
+      if (!data.ok) await showAlert(data.message || "Không lưu được");
+      else delete pendingAssignments[row];
+    } catch (err) {
+      await showAlert("Lỗi kết nối máy chủ.");
+    }
+    await loadEmployeeList();
+    return;
+  }
 
   if (editBtn) {
     editingEmployeeRow = Number(editBtn.dataset.row);

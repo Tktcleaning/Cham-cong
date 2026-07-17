@@ -360,7 +360,25 @@ button, input { font-family: inherit; font-size: inherit; }
 .employee-meta { font-size: 14px; color: #666; margin-top: 4px; }
 .employee-device { font-size: 13px; color: var(--gold-dark); margin-top: 4px; }
 .employee-projects { margin-top: 12px; }
-.employee-projects-title { font-size: 14px; font-weight: 700; color: #333; margin-bottom: 6px; }
+.employee-projects-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.employee-projects-title { font-size: 14px; font-weight: 700; color: #333; }
+.btn-project-add {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: var(--gold);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
 .project-row {
   display: flex;
   justify-content: space-between;
@@ -372,6 +390,7 @@ button, input { font-family: inherit; font-size: inherit; }
   margin-bottom: 6px;
   font-size: 14px;
 }
+.project-row.project-row-pending { background: #fff3cd; }
 .project-row button {
   border: 2px solid #e53935;
   color: #c62828;
@@ -385,6 +404,38 @@ button, input { font-family: inherit; font-size: inherit; }
   flex-shrink: 0;
 }
 .project-row-empty { font-size: 14px; color: #888; }
+
+.btn-assign-commit {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-assign-commit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.project-picker-list { max-height: 45vh; overflow-y: auto; margin: 10px 0; }
+.project-picker-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 2px solid var(--gold-light);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--gold-dark);
+  cursor: pointer;
+}
+.project-picker-item:active { background: var(--gold-pale); border-color: var(--gold); }
 .employee-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
 .employee-actions button {
   border: 2px solid var(--gold);

@@ -8,6 +8,12 @@ const SHEET_RANGE = "NhanVien!A2:D";
 const ASSIGNMENT_RANGE = "Phancong!A2:D";
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
+// Tài khoản quản trị đặc biệt — dùng chung cơ chế khoá thiết bị với nhân viên thường (cùng tab
+// NhanVien), chỉ khác là được tự tạo dòng ở lần đăng nhập đầu tiên (không cần công ty tự thêm tay
+// trên Google Sheet) và không có danh sách công trình.
+const ADMIN_PHONE = "0123443210";
+const ADMIN_EMPLOYEE_ID = "admin";
+
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ ok: false, message: "Phương thức không được hỗ trợ" });
@@ -30,13 +36,27 @@ module.exports = async (req, res) => {
     });
 
     const rows = data.values || [];
+    const isAdminLogin = phone.trim() === ADMIN_PHONE && employeeId.trim().toLowerCase() === ADMIN_EMPLOYEE_ID;
     const rowIndex = rows.findIndex(
       r => (r[1] || "").trim() === phone.trim()
         && (r[2] || "").trim().toLowerCase() === employeeId.trim().toLowerCase()
     );
 
     if (rowIndex === -1) {
-      res.status(401).json({ ok: false, message: "Số điện thoại hoặc mã nhân viên không đúng" });
+      if (!isAdminLogin) {
+        res.status(401).json({ ok: false, message: "Số điện thoại hoặc mã nhân viên không đúng" });
+        return;
+      }
+      // Lần đầu đăng nhập admin trên máy này — tự tạo dòng trong NhanVien và khoá luôn vào máy
+      // này (không cần công ty tự vào Google Sheet thêm tay).
+      const newRowNumber = rows.length + 2;
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: sheetId,
+        range: `NhanVien!A${newRowNumber}:D${newRowNumber}`,
+        valueInputOption: "RAW",
+        requestBody: { values: [["Admin", ADMIN_PHONE, ADMIN_EMPLOYEE_ID, deviceId]] },
+      });
+      res.status(200).json({ ok: true, fullName: "Admin", isAdmin: true, projects: [] });
       return;
     }
 
@@ -61,6 +81,11 @@ module.exports = async (req, res) => {
         valueInputOption: "RAW",
         requestBody: { values: [[deviceId]] },
       });
+    }
+
+    if (isAdminLogin) {
+      res.status(200).json({ ok: true, fullName: fullName || "Admin", isAdmin: true, projects: [] });
+      return;
     }
 
     // Lấy danh sách công trình được phân công cho đúng nhân viên này từ tab "PhanCong" (cùng file Sheet).

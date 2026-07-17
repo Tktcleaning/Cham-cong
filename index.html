@@ -155,6 +155,42 @@
   </div>
 </section>
 
+<!-- MÀN HÌNH QUẢN TRỊ (ADMIN) -->
+<section id="view-admin" class="view">
+  <header class="topbar">
+    <div class="user-name">Trang Quản Trị</div>
+    <button id="btn-admin-logout" class="btn-icon" title="Đăng xuất">🚪</button>
+  </header>
+
+  <div class="admin-content">
+    <button id="btn-export-payroll" class="btn btn-secondary btn-large">TẢI FILE BẢNG LƯƠNG (CSV)</button>
+
+    <h2 class="admin-section-title">Danh sách nhân viên</h2>
+    <button id="btn-add-employee" class="btn btn-primary btn-large">+ THÊM NHÂN VIÊN</button>
+    <div id="employee-list" class="employee-list"></div>
+  </div>
+</section>
+
+<!-- HỘP THOẠI THÊM/SỬA NHÂN VIÊN -->
+<div id="overlay-employee-form" class="overlay">
+  <div class="overlay-box">
+    <p class="subtitle" id="employee-form-title" style="font-size:22px">Thêm nhân viên</p>
+
+    <label for="input-emp-name">Họ Tên</label>
+    <input type="text" id="input-emp-name" autocomplete="off">
+
+    <label for="input-emp-phone">Số điện thoại</label>
+    <input type="tel" id="input-emp-phone" inputmode="numeric" autocomplete="off">
+
+    <label for="input-emp-code">Mã nhân viên</label>
+    <input type="text" id="input-emp-code" autocomplete="off">
+
+    <button id="btn-emp-save" class="btn btn-primary btn-large">LƯU</button>
+    <button id="btn-emp-cancel" class="btn btn-secondary btn-large">HUỶ</button>
+    <p id="employee-form-error" class="error-text"></p>
+  </div>
+</div>
+
 <!-- LỚP PHỦ ĐANG LẤY VỊ TRÍ -->
 <div id="overlay-loading" class="overlay">
   <div class="overlay-box">

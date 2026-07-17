@@ -32,6 +32,7 @@ const view = {
   history: document.getElementById("view-history"),
   forgot: document.getElementById("view-forgot"),
   makeup: document.getElementById("view-makeup"),
+  admin: document.getElementById("view-admin"),
 };
 
 function showView(name) {
@@ -240,7 +241,7 @@ btnLogin.addEventListener("click", async () => {
       return;
     }
 
-    setUser({ phone, employeeId, fullName: data.fullName || "", projects: data.projects || [] });
+    setUser({ phone, employeeId, fullName: data.fullName || "", projects: data.projects || [], isAdmin: !!data.isAdmin });
     rememberLogin(phone, employeeId);
     routeAfterAuth();
     return;
@@ -435,6 +436,8 @@ function showMakeupView(staleShift) {
 function routeAfterAuth() {
   const user = getUser();
   if (!user) { showView("login"); return; }
+
+  if (user.isAdmin) { enterAdminView(); return; }
 
   const staleShift = getStaleOpenShift(user.phone);
   if (staleShift) { showMakeupView(staleShift); return; }
@@ -905,6 +908,183 @@ btnMakeupSubmit.addEventListener("click", async () => {
   }
 
   routeAfterAuth();
+});
+
+// ---------- Trang Quản Trị (Admin) ----------
+// Đăng nhập bằng SĐT+mã NV đặc biệt (xem api/login.js) sẽ vào thẳng đây thay vì màn chấm công
+// bình thường. Không dùng chung cơ chế chấm công/lịch sử — chỉ để công ty xem/sửa danh sách nhân
+// viên và tải dữ liệu chấm công, không cần mở Google Sheet thủ công.
+const employeeListEl = document.getElementById("employee-list");
+const btnAddEmployee = document.getElementById("btn-add-employee");
+const btnExportPayroll = document.getElementById("btn-export-payroll");
+const overlayEmployeeForm = document.getElementById("overlay-employee-form");
+const employeeFormTitle = document.getElementById("employee-form-title");
+const inputEmpName = document.getElementById("input-emp-name");
+const inputEmpPhone = document.getElementById("input-emp-phone");
+const inputEmpCode = document.getElementById("input-emp-code");
+const employeeFormError = document.getElementById("employee-form-error");
+const btnEmpSave = document.getElementById("btn-emp-save");
+const btnEmpCancel = document.getElementById("btn-emp-cancel");
+let editingEmployeeRow = null; // null = đang thêm mới, có số = đang sửa đúng dòng đó trong Sheet
+
+document.getElementById("btn-admin-logout").addEventListener("click", logout);
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function enterAdminView() {
+  showView("admin");
+  loadEmployeeList();
+}
+
+async function loadEmployeeList() {
+  employeeListEl.innerHTML = "<p class='empty-text'>Đang tải...</p>";
+  try {
+    const res = await fetch(`/api/admin-employees?deviceId=${encodeURIComponent(getDeviceId())}`);
+    const data = await res.json();
+    if (!data.ok) {
+      employeeListEl.innerHTML = `<p class="empty-text">${escapeHtml(data.message || "Không tải được danh sách")}</p>`;
+      return;
+    }
+    renderEmployeeList(data.employees);
+  } catch (err) {
+    employeeListEl.innerHTML = "<p class='empty-text'>Lỗi kết nối máy chủ.</p>";
+  }
+}
+
+function renderEmployeeList(employees) {
+  if (!employees.length) {
+    employeeListEl.innerHTML = "<p class='empty-text'>Chưa có nhân viên nào.</p>";
+    return;
+  }
+  employeeListEl.innerHTML = employees.map(e => `
+    <div class="employee-item">
+      <div class="employee-info">
+        <div class="employee-name">${escapeHtml(e.fullName)}</div>
+        <div class="employee-meta">SĐT: ${escapeHtml(e.phone)} · Mã NV: ${escapeHtml(e.employeeId)}</div>
+        <div class="employee-device">${e.deviceId ? "🔒 Đã khoá máy" : "🔓 Chưa khoá máy"}</div>
+      </div>
+      <div class="employee-actions">
+        <button class="btn-emp-edit" data-row="${e.row}" data-name="${escapeHtml(e.fullName)}" data-phone="${escapeHtml(e.phone)}" data-code="${escapeHtml(e.employeeId)}">Sửa</button>
+        <button class="btn-emp-reset" data-row="${e.row}" ${e.deviceId ? "" : "disabled"}>Reset máy</button>
+        <button class="btn-emp-delete" data-row="${e.row}" data-name="${escapeHtml(e.fullName)}">Xoá</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+employeeListEl.addEventListener("click", async (e) => {
+  const editBtn = e.target.closest(".btn-emp-edit");
+  const resetBtn = e.target.closest(".btn-emp-reset");
+  const deleteBtn = e.target.closest(".btn-emp-delete");
+
+  if (editBtn) {
+    editingEmployeeRow = Number(editBtn.dataset.row);
+    employeeFormTitle.textContent = "Sửa nhân viên";
+    inputEmpName.value = editBtn.dataset.name;
+    inputEmpPhone.value = editBtn.dataset.phone;
+    inputEmpCode.value = editBtn.dataset.code;
+    employeeFormError.textContent = "";
+    overlayEmployeeForm.classList.add("active");
+    return;
+  }
+
+  if (resetBtn) {
+    const row = Number(resetBtn.dataset.row);
+    resetBtn.disabled = true;
+    resetBtn.textContent = "Đang xử lý...";
+    try {
+      const res = await fetch("/api/admin-employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "resetDevice", row, deviceId: getDeviceId() }),
+      });
+      const data = await res.json();
+      if (!data.ok) await showAlert(data.message || "Không thực hiện được");
+    } catch (err) {
+      await showAlert("Lỗi kết nối máy chủ.");
+    }
+    await loadEmployeeList();
+    return;
+  }
+
+  if (deleteBtn) {
+    const row = Number(deleteBtn.dataset.row);
+    const name = deleteBtn.dataset.name;
+    if (!confirm(`Xoá nhân viên "${name}" khỏi danh sách?`)) return;
+    try {
+      const res = await fetch("/api/admin-employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", row, deviceId: getDeviceId() }),
+      });
+      const data = await res.json();
+      if (!data.ok) await showAlert(data.message || "Không xoá được");
+    } catch (err) {
+      await showAlert("Lỗi kết nối máy chủ.");
+    }
+    await loadEmployeeList();
+  }
+});
+
+btnAddEmployee.addEventListener("click", () => {
+  editingEmployeeRow = null;
+  employeeFormTitle.textContent = "Thêm nhân viên";
+  inputEmpName.value = "";
+  inputEmpPhone.value = "";
+  inputEmpCode.value = "";
+  employeeFormError.textContent = "";
+  overlayEmployeeForm.classList.add("active");
+});
+
+btnEmpCancel.addEventListener("click", () => {
+  overlayEmployeeForm.classList.remove("active");
+});
+
+btnEmpSave.addEventListener("click", async () => {
+  const fullName = inputEmpName.value.trim();
+  const phone = inputEmpPhone.value.trim();
+  const employeeId = inputEmpCode.value.trim();
+
+  if (!fullName || !employeeId) {
+    employeeFormError.textContent = "Vui lòng nhập đầy đủ thông tin.";
+    return;
+  }
+  if (!isValidPhone(phone)) {
+    employeeFormError.textContent = "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).";
+    return;
+  }
+
+  employeeFormError.textContent = "";
+  btnEmpSave.disabled = true;
+  btnEmpSave.textContent = "Đang lưu...";
+  try {
+    const body = editingEmployeeRow
+      ? { action: "edit", row: editingEmployeeRow, fullName, phone, employeeId, deviceId: getDeviceId() }
+      : { action: "add", fullName, phone, employeeId, deviceId: getDeviceId() };
+    const res = await fetch("/api/admin-employees", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      employeeFormError.textContent = data.message || "Không lưu được";
+      return;
+    }
+    overlayEmployeeForm.classList.remove("active");
+    await loadEmployeeList();
+  } catch (err) {
+    employeeFormError.textContent = "Không kết nối được máy chủ.";
+  } finally {
+    btnEmpSave.disabled = false;
+    btnEmpSave.textContent = "LƯU";
+  }
+});
+
+btnExportPayroll.addEventListener("click", () => {
+  window.location.href = `/api/admin-export-payroll?deviceId=${encodeURIComponent(getDeviceId())}`;
 });
 
 // ---------- Khởi động ----------

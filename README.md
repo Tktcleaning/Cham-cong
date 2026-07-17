@@ -17,7 +17,9 @@ Khi công nhân bấm mở link app từ trong Zalo/Messenger/Facebook/Instagram
 1. WebView này thường **không lấy được định vị GPS** đầy đủ (không có quyền hệ thống như trình duyệt thật).
 2. WebView này có `localStorage` **riêng biệt hoàn toàn** với Safari/Chrome — nên "Mã Máy" sinh ra khác nhau dù cùng 1 điện thoại, khiến hệ thống tưởng nhầm là "2 thiết bị khác nhau" và chặn đăng nhập.
 
-Không có cách nào sửa được giới hạn này từ phía code app — `isInAppBrowser()` trong `js/app.js` nhận diện qua User Agent (`zalo`, `FBAN`/`FBAV`/`FB_IAB`, `Instagram`, `Line/`) và **chặn toàn bộ app ngay từ đầu** (kể cả trước màn đăng nhập), hiện màn hướng dẫn bấm menu "⋮"/"⋯" để "Mở bằng trình duyệt" (Safari/Chrome), kèm nút sao chép link dự phòng. Nếu gặp thêm app nhắn tin khác gây lỗi tương tự, chỉ cần thêm từ khoá nhận diện vào regex trong hàm này.
+Không có cách nào sửa được giới hạn này từ phía code app — `isInAppBrowser()` trong `js/app.js` nhận diện qua User Agent (`zalo`, `FBAN`/`FBAV`/`FB_IAB`, `Instagram`, `Line/`) và **chặn toàn bộ app ngay từ đầu** (kể cả trước màn đăng nhập), hiện màn hướng dẫn. Nếu gặp thêm app nhắn tin khác gây lỗi tương tự, chỉ cần thêm từ khoá nhận diện vào regex trong hàm này.
+
+**Nút "Mở bằng Chrome" (chỉ Android):** dùng link `intent://...#Intent;scheme=https;package=com.android.chrome;end` để yêu cầu hệ điều hành mở thẳng Chrome. Đây chỉ là "cố gắng hết sức" — nhiều trình duyệt trong app (Zalo...) tự chặn điều hướng ra ngoài để giữ chân người dùng, nên không đảm bảo luôn thành công. **Trên iPhone không có nút này** vì Apple không cho phép trang web tự mở Safari bằng code — đây là giới hạn hệ điều hành cố định, không có cách lách. Fallback luôn có sẵn: hướng dẫn bấm menu "⋮"/"⋯" chọn "Mở bằng trình duyệt", kèm nút sao chép link.
 
 ## Tự động cập nhật bản mới, không cần xoá cache
 

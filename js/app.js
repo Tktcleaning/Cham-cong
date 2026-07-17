@@ -63,6 +63,22 @@ if (isInAppBrowser()) {
       copyLinkStatus.textContent = "Không sao chép được, vui lòng tự copy link ở thanh địa chỉ.";
     }
   });
+
+  // Trên Android, thử mở thẳng Chrome bằng link "intent://" — yêu cầu hệ điều hành mở app khác
+  // xử lý URL này thay vì WebView hiện tại. Chỉ là "cố gắng hết sức": nhiều trình duyệt trong app
+  // (Zalo...) tự chặn việc điều hướng ra ngoài để giữ người dùng ở lại, nên không đảm bảo luôn
+  // thành công — nếu không được, người dùng vẫn còn cách sao chép link hoặc bấm menu "⋮"/"⋯" thủ công.
+  // Trên iPhone, Apple không cho phép trang web tự mở Safari bằng code (giới hạn hệ điều hành,
+  // không có cách nào lách được), nên không hiện nút này.
+  if (/android/i.test(navigator.userAgent || "")) {
+    const btnOpenChrome = document.getElementById("btn-open-chrome");
+    btnOpenChrome.style.display = "";
+    btnOpenChrome.addEventListener("click", () => {
+      const url = location.href.replace(/^https?:\/\//, "");
+      location.href = `intent://${url}#Intent;scheme=https;package=com.android.chrome;end`;
+    });
+  }
+
   throw new Error("in-app browser blocked"); // dừng toàn bộ phần code còn lại của app (đăng nhập, GPS...)
 }
 

@@ -581,19 +581,41 @@ btnCheckIn.addEventListener("click", () => {
     return;
   }
   pendingCheckType = "in";
+  // Khoá ngay cả 2 nút lúc vừa bấm (trước khi mở Camera), không đợi cả luồng chụp ảnh+GPS xong
+  // mới khoá — tránh bấm đúp trong lúc chờ mở Camera (nguyên nhân phổ biến gây lệch dữ liệu).
+  btnCheckIn.disabled = true;
+  btnCheckOut.disabled = true;
   cameraInput.value = "";
   cameraInput.click();
 });
 
 btnCheckOut.addEventListener("click", () => {
   pendingCheckType = "out";
+  btnCheckIn.disabled = true;
+  btnCheckOut.disabled = true;
   cameraInput.value = "";
   cameraInput.click();
 });
 
+// Nếu người dùng huỷ hộp thoại Camera (không chụp ảnh), phải mở khoá lại nút đúng theo trạng
+// thái thật hiện tại — không phải mở khoá chung chung. Ưu tiên sự kiện "cancel" (trình duyệt
+// mới); dự phòng bằng "focus" của cửa sổ cho trình duyệt cũ không hỗ trợ sự kiện này.
+cameraInput.addEventListener("cancel", () => {
+  pendingCheckType = null;
+  refreshStatus();
+});
+window.addEventListener("focus", () => {
+  setTimeout(() => {
+    if (pendingCheckType && (!cameraInput.files || cameraInput.files.length === 0)) {
+      pendingCheckType = null;
+      refreshStatus();
+    }
+  }, 500);
+});
+
 cameraInput.addEventListener("change", async () => {
   const file = cameraInput.files[0];
-  if (!file || !pendingCheckType) return; // người dùng huỷ chụp hình
+  if (!file || !pendingCheckType) { refreshStatus(); return; } // người dùng huỷ chụp hình
 
   overlayLoading.classList.add("active");
   overlayText.textContent = "Đang xử lý ảnh và vị trí...";

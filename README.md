@@ -81,6 +81,10 @@ Khi bấm **TAN CA**, app tự tính thời gian của **ca vừa hoàn thành**
 
 **Lưu ý:** đây là thời gian của RIÊNG ca vừa xong, không phải tổng cộng dồn nếu trong ngày có nhiều ca vào-ra (bản đầu tiên từng cộng dồn cả ngày, gây lệch số với Lịch sử khi test nhiều ca liên tiếp — đã bỏ). Tính từ dữ liệu `localStorage` trên máy, không phải từ Sheet — nếu công nhân đổi thiết bị giữa ca, thời gian hiển thị sẽ không tính được đúng (không tìm thấy bản ghi VÀO CA tương ứng trên thiết bị mới).
 
+## Chống bấm đúp VÀO CA/TAN CA
+
+Nút VÀO CA/TAN CA bị khoá **ngay lúc vừa bấm** (trước khi mở Camera), không đợi cả luồng chụp ảnh + lấy GPS + lưu xong mới khoá như trước — vì khoảng chờ mở Camera (vài giây) là lúc dễ bị bấm đúp nhất, gây ra 2 bản ghi chấm công liên tiếp sai lệch (đã gặp thật trong dữ liệu test). Nếu công nhân huỷ hộp thoại Camera (không chụp), nút được mở khoá lại đúng theo trạng thái thật (`refreshStatus()`) qua sự kiện `cancel` của input file — dự phòng thêm bằng sự kiện `focus` của cửa sổ cho trình duyệt cũ không hỗ trợ `cancel`.
+
 ## Bảng lương (file `Bao_cao_cham_cong`, tab `Bang_luong`)
 
 File Sheet riêng thứ 3 (`GOOGLE_PAYROLL_SHEET_ID`), phục vụ báo cáo/tính lương — khác với file `Ghi_nhan_cham_cong` (lưu từng lượt chấm công thô). Cấu trúc tab `Bang_luong` (đã có sẵn, công ty tự tạo): cột A-H là STT/Code/CCCD/Họ tên/Công trình/Kiểu CT/Đơn giá/Mức Lương, cột I-AM là 31 cột ngày (1-31) trong tháng, cột AN trở đi là các cột lương/phụ cấp/khấu trừ do kế toán tự nhập tay (app không đụng tới).

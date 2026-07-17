@@ -20,6 +20,12 @@ function parseVNTimestamp(s) {
   return new Date(y, m - 1, d, hh || 0, mm || 0, ss || 0);
 }
 
+// Ca thiếu vào/ra (test/bấm trùng ngoài đời thật) — theo yêu cầu người dùng, để chạy thử dữ liệu:
+// thiếu "Vào ca" thì giả định vào lúc 08:00 cùng ngày; thiếu "Tan ca" thì giả định ra lúc 17:00 cùng ngày.
+function sameDayAt(date, hh, mm) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hh, mm, 0);
+}
+
 module.exports = async (req, res) => {
   const dryRun = req.query.dryRun !== "false";
 
@@ -45,28 +51,45 @@ module.exports = async (req, res) => {
     }
 
     const shifts = [];
-    const skippedUnpaired = [];
+    const assumedShifts = [];
     for (const phone in byPhone) {
       const list = byPhone[phone].sort((a, b) => a.t - b.t);
       let openIn = null;
+
+      const closeShift = (inRec, outRec, assumed) => {
+        const hours = roundToHalfHour(Math.max(0, (outRec.t - inRec.t) / 3600000));
+        const shift = {
+          employeeId: (inRec.employeeId || outRec.employeeId || "").trim(),
+          fullName: inRec.fullName || outRec.fullName || "",
+          projectName: (outRec.duAn || inRec.duAn || "").trim(),
+          day: inRec.t.getDate(),
+          hours,
+        };
+        shifts.push(shift);
+        if (assumed) assumedShifts.push({ phone, ...shift, assumed, inTime: inRec.t, outTime: outRec.t });
+      };
+
       for (const rec of list) {
         if (rec.loai === "Vào ca") {
-          if (openIn) skippedUnpaired.push({ phone, ...openIn }); // vào ca 2 lần liên tiếp không có tan ca ở giữa
+          if (openIn) {
+            // vào ca 2 lần liên tiếp không có tan ca ở giữa -> giả định tan ca 17:00 cùng ngày ca trước
+            closeShift(openIn, { t: sameDayAt(openIn.t, 17, 0) }, "thiếu tan ca (giả định 17:00)");
+          }
           openIn = rec;
         } else if (rec.loai === "Tan ca") {
-          if (!openIn) { skippedUnpaired.push({ phone, ...rec }); continue; }
-          const hours = roundToHalfHour((rec.t - openIn.t) / 3600000);
-          shifts.push({
-            employeeId: (openIn.employeeId || "").trim(),
-            fullName: openIn.fullName || "",
-            projectName: (rec.duAn || openIn.duAn || "").trim(),
-            day: rec.t.getDate(),
-            hours,
-          });
+          if (!openIn) {
+            // tan ca không có vào ca trước đó -> giả định vào ca 08:00 cùng ngày
+            closeShift({ t: sameDayAt(rec.t, 8, 0) }, rec, "thiếu vào ca (giả định 08:00)");
+            continue;
+          }
+          closeShift(openIn, rec, false);
           openIn = null;
         }
       }
-      if (openIn) skippedUnpaired.push({ phone, ...openIn }); // còn "vào ca" chưa có "tan ca" (ca đang mở)
+      if (openIn) {
+        // còn "vào ca" chưa có "tan ca" (ca đang mở, kể cả ca cuối cùng của SĐT) -> giả định tan ca 17:00 cùng ngày
+        closeShift(openIn, { t: sameDayAt(openIn.t, 17, 0) }, "thiếu tan ca (giả định 17:00)");
+      }
     }
 
     // Gộp các ca cùng NV + cùng công trình + cùng ngày thành 1 số giờ trước khi ghi (giống hệt
@@ -85,7 +108,7 @@ module.exports = async (req, res) => {
       res.status(200).json({
         dryRun: true,
         shiftsToWrite: finalShifts,
-        skippedUnpaired: skippedUnpaired.map(s => ({ phone: s.phone, employeeId: s.employeeId, loai: s.loai, time: s.t })),
+        assumedShifts,
       });
       return;
     }

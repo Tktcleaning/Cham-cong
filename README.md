@@ -11,6 +11,14 @@
 - **Danh sách công trình mỗi nhân viên:** lấy thật từ Sheet "PhanCong" riêng, trả về kèm lúc đăng nhập — xem mục "Phân công công trình" bên dưới.
 - **Định vị:** dùng `navigator.geolocation` của trình duyệt, cần HTTPS (hoặc localhost) và người dùng cho phép quyền vị trí.
 
+## Chặn trình duyệt trong app (Zalo, Facebook, Instagram, Line...)
+
+Khi công nhân bấm mở link app từ trong Zalo/Messenger/Facebook/Instagram, các app này tự mở link bằng **trình duyệt WebView riêng của họ** (không phải Safari/Chrome thật) — 2 vấn đề thực tế đã gặp:
+1. WebView này thường **không lấy được định vị GPS** đầy đủ (không có quyền hệ thống như trình duyệt thật).
+2. WebView này có `localStorage` **riêng biệt hoàn toàn** với Safari/Chrome — nên "Mã Máy" sinh ra khác nhau dù cùng 1 điện thoại, khiến hệ thống tưởng nhầm là "2 thiết bị khác nhau" và chặn đăng nhập.
+
+Không có cách nào sửa được giới hạn này từ phía code app — `isInAppBrowser()` trong `js/app.js` nhận diện qua User Agent (`zalo`, `FBAN`/`FBAV`/`FB_IAB`, `Instagram`, `Line/`) và **chặn toàn bộ app ngay từ đầu** (kể cả trước màn đăng nhập), hiện màn hướng dẫn bấm menu "⋮"/"⋯" để "Mở bằng trình duyệt" (Safari/Chrome), kèm nút sao chép link dự phòng. Nếu gặp thêm app nhắn tin khác gây lỗi tương tự, chỉ cần thêm từ khoá nhận diện vào regex trong hàm này.
+
 ## Tự động cập nhật bản mới, không cần xoá cache
 
 Trước đây `sw.js` (Service Worker cho PWA) dùng chiến lược "cache trước" (cache-first) — sau khi deploy bản mới, trình duyệt vẫn trung thành phục vụ bản cũ đã lưu cho tới khi người dùng tự xoá lịch sử/cache, điều mà công nhân lớn tuổi không biết cách làm. Đã sửa với 3 lớp phòng thủ:

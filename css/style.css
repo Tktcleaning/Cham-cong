@@ -69,6 +69,14 @@ button, input { font-family: inherit; font-size: inherit; }
   min-height: 24px;
 }
 
+.copy-status {
+  font-size: 18px;
+  margin-top: 14px;
+  min-height: 24px;
+  color: var(--gold-dark);
+}
+.copy-status.error { color: #c62828; }
+
 /* ---------- Nút bấm chung ---------- */
 .btn {
   display: block;

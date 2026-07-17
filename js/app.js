@@ -25,6 +25,7 @@ function getDeviceId() {
 }
 
 const view = {
+  inappBlocked: document.getElementById("view-inapp-blocked"),
   login: document.getElementById("view-login"),
   project: document.getElementById("view-project"),
   main: document.getElementById("view-main"),
@@ -36,6 +37,33 @@ const view = {
 function showView(name) {
   Object.values(view).forEach(v => v.classList.remove("active"));
   view[name].classList.add("active");
+}
+
+// Trình duyệt trong app (Zalo, Facebook/Messenger, Instagram...) chạy trên WebView riêng —
+// thường không hỗ trợ đầy đủ Geolocation API, và có bộ nhớ trình duyệt (localStorage) tách biệt
+// hoàn toàn với Safari/Chrome thật trên cùng điện thoại, gây lệch "Mã Máy" giữa 2 nơi tưởng là 1
+// thiết bị. Không có cách nào "sửa" được giới hạn này từ phía code app — phải chặn và bắt người
+// dùng tự mở lại bằng trình duyệt thật.
+function isInAppBrowser() {
+  const ua = navigator.userAgent || "";
+  return /zalo|FBAN|FBAV|FB_IAB|Instagram|Line\//i.test(ua);
+}
+
+if (isInAppBrowser()) {
+  showView("inappBlocked");
+  const btnCopyLink = document.getElementById("btn-copy-link");
+  const copyLinkStatus = document.getElementById("copy-link-status");
+  btnCopyLink.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      copyLinkStatus.className = "copy-status";
+      copyLinkStatus.textContent = "Đã sao chép link — dán vào Safari/Chrome để mở.";
+    } catch (err) {
+      copyLinkStatus.className = "copy-status error";
+      copyLinkStatus.textContent = "Không sao chép được, vui lòng tự copy link ở thanh địa chỉ.";
+    }
+  });
+  throw new Error("in-app browser blocked"); // dừng toàn bộ phần code còn lại của app (đăng nhập, GPS...)
 }
 
 // Hộp thoại thông báo riêng của app (thay cho alert() gốc trình duyệt) — cho phép tuỳ biến

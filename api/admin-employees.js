@@ -33,8 +33,33 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === "GET") {
+      // Gộp thêm công trình đang được phân công của mỗi nhân viên từ tab Phancong (cùng file Sheet),
+      // để trang Admin hiện luôn danh sách công trình khi tìm ra 1 nhân viên.
+      const { data: pcData } = await sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: "Phancong!A2:D",
+      });
+      const pcRows = pcData.values || [];
+      const projectsByEmployee = {};
+      pcRows.forEach((r, i) => {
+        const empId = (r[1] || "").trim().toLowerCase();
+        if (!empId) return;
+        (projectsByEmployee[empId] = projectsByEmployee[empId] || []).push({
+          row: i + 2,
+          projectCode: (r[2] || "").trim(),
+          projectName: (r[3] || "").trim(),
+        });
+      });
+
       const employees = rows
-        .map((r, i) => ({ row: i + 2, fullName: r[0] || "", phone: r[1] || "", employeeId: r[2] || "", deviceId: r[3] || "" }))
+        .map((r, i) => ({
+          row: i + 2,
+          fullName: r[0] || "",
+          phone: r[1] || "",
+          employeeId: r[2] || "",
+          deviceId: r[3] || "",
+          projects: projectsByEmployee[(r[2] || "").trim().toLowerCase()] || [],
+        }))
         .filter(e => !(e.phone === ADMIN_PHONE && e.employeeId.toLowerCase() === ADMIN_EMPLOYEE_ID));
       res.status(200).json({ ok: true, employees });
       return;
@@ -106,6 +131,27 @@ module.exports = async (req, res) => {
         if (!row) { res.status(400).json({ ok: false, message: "Thiếu dòng cần xử lý" }); return; }
         const sheetMeta = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
         const sheet = sheetMeta.data.sheets.find(s => s.properties.title === "NhanVien");
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId: sheetId,
+          requestBody: {
+            requests: [{
+              deleteDimension: {
+                range: { sheetId: sheet.properties.sheetId, dimension: "ROWS", startIndex: row - 1, endIndex: row },
+              },
+            }],
+          },
+        });
+        res.status(200).json({ ok: true });
+        return;
+      }
+
+      if (action === "deleteProjectAssignment") {
+        // Xoá hẳn 1 dòng phân công công trình trong tab Phancong (dồn các dòng bên dưới lên),
+        // dùng khi nhân viên không còn làm công trình đó nữa.
+        const row = Number(req.body.row);
+        if (!row) { res.status(400).json({ ok: false, message: "Thiếu dòng cần xử lý" }); return; }
+        const sheetMeta = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
+        const sheet = sheetMeta.data.sheets.find(s => s.properties.title === "Phancong");
         await sheets.spreadsheets.batchUpdate({
           spreadsheetId: sheetId,
           requestBody: {

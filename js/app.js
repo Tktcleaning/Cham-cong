@@ -917,6 +917,7 @@ btnMakeupSubmit.addEventListener("click", async () => {
 const employeeListEl = document.getElementById("employee-list");
 const btnAddEmployee = document.getElementById("btn-add-employee");
 const btnExportPayroll = document.getElementById("btn-export-payroll");
+const inputEmpSearch = document.getElementById("input-emp-search");
 const overlayEmployeeForm = document.getElementById("overlay-employee-form");
 const employeeFormTitle = document.getElementById("employee-form-title");
 const inputEmpName = document.getElementById("input-emp-name");
@@ -926,11 +927,21 @@ const employeeFormError = document.getElementById("employee-form-error");
 const btnEmpSave = document.getElementById("btn-emp-save");
 const btnEmpCancel = document.getElementById("btn-emp-cancel");
 let editingEmployeeRow = null; // null = đang thêm mới, có số = đang sửa đúng dòng đó trong Sheet
+let allEmployees = []; // toàn bộ ~600 nhân viên tải 1 lần, lọc theo tên ngay trên trình duyệt
 
 document.getElementById("btn-admin-logout").addEventListener("click", logout);
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// Bỏ dấu tiếng Việt để tìm kiếm không cần gõ đúng dấu (VD "trang" cũng tìm ra "Trang", "Tráng"...).
+function normalizeVN(s) {
+  return (s || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase();
 }
 
 function enterAdminView() {
@@ -944,18 +955,34 @@ async function loadEmployeeList() {
     const res = await fetch(`/api/admin-employees?deviceId=${encodeURIComponent(getDeviceId())}`);
     const data = await res.json();
     if (!data.ok) {
+      allEmployees = [];
       employeeListEl.innerHTML = `<p class="empty-text">${escapeHtml(data.message || "Không tải được danh sách")}</p>`;
       return;
     }
-    renderEmployeeList(data.employees);
+    allEmployees = data.employees;
+    applySearchFilter();
   } catch (err) {
+    allEmployees = [];
     employeeListEl.innerHTML = "<p class='empty-text'>Lỗi kết nối máy chủ.</p>";
   }
 }
 
+// Danh sách gần 600 nhân viên — không hiện hết cùng lúc, bắt buộc gõ tên mới hiện kết quả.
+function applySearchFilter() {
+  const term = normalizeVN(inputEmpSearch.value.trim());
+  if (!term) {
+    employeeListEl.innerHTML = "<p class='empty-text'>Nhập họ tên để tìm nhân viên.</p>";
+    return;
+  }
+  const filtered = allEmployees.filter(e => normalizeVN(e.fullName).includes(term));
+  renderEmployeeList(filtered);
+}
+
+inputEmpSearch.addEventListener("input", applySearchFilter);
+
 function renderEmployeeList(employees) {
   if (!employees.length) {
-    employeeListEl.innerHTML = "<p class='empty-text'>Chưa có nhân viên nào.</p>";
+    employeeListEl.innerHTML = "<p class='empty-text'>Không tìm thấy nhân viên nào.</p>";
     return;
   }
   employeeListEl.innerHTML = employees.map(e => `
@@ -964,6 +991,15 @@ function renderEmployeeList(employees) {
         <div class="employee-name">${escapeHtml(e.fullName)}</div>
         <div class="employee-meta">SĐT: ${escapeHtml(e.phone)} · Mã NV: ${escapeHtml(e.employeeId)}</div>
         <div class="employee-device">${e.deviceId ? "🔒 Đã khoá máy" : "🔓 Chưa khoá máy"}</div>
+        <div class="employee-projects">
+          <div class="employee-projects-title">Công trình đang làm:</div>
+          ${e.projects.length ? e.projects.map(p => `
+            <div class="project-row">
+              <span>${escapeHtml(p.projectName)}</span>
+              <button class="btn-project-delete" data-row="${p.row}" data-name="${escapeHtml(p.projectName)}">Xoá</button>
+            </div>
+          `).join("") : '<div class="project-row-empty">Chưa được phân công công trình nào</div>'}
+        </div>
       </div>
       <div class="employee-actions">
         <button class="btn-emp-edit" data-row="${e.row}" data-name="${escapeHtml(e.fullName)}" data-phone="${escapeHtml(e.phone)}" data-code="${escapeHtml(e.employeeId)}">Sửa</button>
@@ -978,6 +1014,7 @@ employeeListEl.addEventListener("click", async (e) => {
   const editBtn = e.target.closest(".btn-emp-edit");
   const resetBtn = e.target.closest(".btn-emp-reset");
   const deleteBtn = e.target.closest(".btn-emp-delete");
+  const projectDeleteBtn = e.target.closest(".btn-project-delete");
 
   if (editBtn) {
     editingEmployeeRow = Number(editBtn.dataset.row);
@@ -1018,6 +1055,25 @@ employeeListEl.addEventListener("click", async (e) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "delete", row, deviceId: getDeviceId() }),
+      });
+      const data = await res.json();
+      if (!data.ok) await showAlert(data.message || "Không xoá được");
+    } catch (err) {
+      await showAlert("Lỗi kết nối máy chủ.");
+    }
+    await loadEmployeeList();
+    return;
+  }
+
+  if (projectDeleteBtn) {
+    const row = Number(projectDeleteBtn.dataset.row);
+    const name = projectDeleteBtn.dataset.name;
+    if (!confirm(`Xoá phân công công trình "${name}" khỏi nhân viên này?`)) return;
+    try {
+      const res = await fetch("/api/admin-employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "deleteProjectAssignment", row, deviceId: getDeviceId() }),
       });
       const data = await res.json();
       if (!data.ok) await showAlert(data.message || "Không xoá được");

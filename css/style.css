@@ -74,6 +74,52 @@ button, input { font-family: inherit; font-size: inherit; }
   color: #333;
 }
 
+.install-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--gold-pale);
+  border: 2px solid var(--gold);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 4px 0 8px;
+  font-size: 14px;
+  color: var(--gold-dark);
+  font-weight: 600;
+  text-align: left;
+}
+.install-banner-btn {
+  flex-shrink: 0;
+  border: none;
+  background: var(--gold);
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+.install-guide-steps { text-align: left; margin: 20px 0; }
+.install-guide-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  font-size: 17px;
+  line-height: 1.4;
+}
+.install-guide-num {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800;
+  font-size: 15px;
+}
+
 .error-text {
   color: #c62828;
   font-size: 18px;

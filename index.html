@@ -32,6 +32,11 @@
     <p class="slogan">We care your space - we save your time</p>
     <p class="subtitle">Chấm Công Online</p>
 
+    <div id="install-banner" class="install-banner" style="display:none">
+      <span>📲 Cài ứng dụng vào Màn hình chính để chấm công ổn định hơn</span>
+      <button id="btn-install-app" class="install-banner-btn">Cài đặt</button>
+    </div>
+
     <label for="input-phone">Số điện thoại</label>
     <input type="tel" id="input-phone" inputmode="numeric" placeholder="Ví dụ: 0912345678" autocomplete="off">
 
@@ -202,6 +207,33 @@
     <input type="text" id="input-project-picker-search" class="search-input" placeholder="Tìm công trình..." autocomplete="off">
     <div id="project-picker-list" class="project-picker-list"></div>
     <button id="btn-project-picker-done" class="btn btn-primary btn-large">XONG</button>
+  </div>
+</div>
+
+<!-- HỘP THOẠI HƯỚNG DẪN THÊM VÀO MÀN HÌNH CHÍNH (dùng cho iPhone/Safari — không có cách nào tự
+     động thêm bằng code do giới hạn của Apple, chỉ có thể hướng dẫn) -->
+<div id="overlay-install-guide" class="overlay">
+  <div class="overlay-box">
+    <p class="subtitle" style="font-size:22px">Thêm vào Màn hình chính</p>
+    <div class="install-guide-steps">
+      <div class="install-guide-step">
+        <span class="install-guide-num">1</span>
+        <span>Bấm vào biểu tượng <strong>Chia sẻ</strong>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle">
+            <path d="M12 3v12M8 7l4-4 4 4M5 12v7a1 1 0 001 1h12a1 1 0 001-1v-7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          ở thanh dưới cùng trình duyệt Safari.</span>
+      </div>
+      <div class="install-guide-step">
+        <span class="install-guide-num">2</span>
+        <span>Cuộn xuống, chọn <strong>"Thêm vào MH chính"</strong> (Add to Home Screen).</span>
+      </div>
+      <div class="install-guide-step">
+        <span class="install-guide-num">3</span>
+        <span>Bấm <strong>"Thêm"</strong> ở góc trên bên phải.</span>
+      </div>
+    </div>
+    <button id="btn-install-guide-close" class="btn btn-primary btn-large">ĐÃ HIỂU</button>
   </div>
 </div>
 

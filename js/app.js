@@ -1266,6 +1266,56 @@ btnExportPayroll.addEventListener("click", () => {
   window.location.href = `/api/admin-export-payroll?deviceId=${encodeURIComponent(getDeviceId())}`;
 });
 
+// ---------- Cài đặt vào Màn hình chính (PWA) ----------
+// Trên Android/Chrome, trình duyệt tự bắn sự kiện "beforeinstallprompt" nếu đủ điều kiện (có
+// manifest.json + service worker hợp lệ) — bắt sự kiện này lại để bấm nút là cài luôn, không cần
+// qua menu trình duyệt. Trên iPhone/Safari, Apple KHÔNG cho phép trang web tự kích hoạt "Thêm vào
+// Màn hình chính" bằng bất kỳ API nào (giới hạn cố ý của Apple, không có cách lách) — chỉ có thể
+// hướng dẫn người dùng tự làm qua nút Chia sẻ.
+function isStandalonePWA() {
+  return window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+}
+function isIOSDevice() {
+  const ua = navigator.userAgent || "";
+  return /iphone|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+}
+
+const installBanner = document.getElementById("install-banner");
+const btnInstallApp = document.getElementById("btn-install-app");
+const overlayInstallGuide = document.getElementById("overlay-install-guide");
+const btnInstallGuideClose = document.getElementById("btn-install-guide-close");
+let deferredInstallPrompt = null;
+
+if (!isStandalonePWA() && isIOSDevice()) {
+  installBanner.style.display = "flex";
+}
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if (!isStandalonePWA()) installBanner.style.display = "flex";
+});
+
+window.addEventListener("appinstalled", () => {
+  installBanner.style.display = "none";
+});
+
+btnInstallApp.addEventListener("click", async () => {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    const choice = await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    if (choice.outcome === "accepted") installBanner.style.display = "none";
+    return;
+  }
+  // iPhone (hoặc Android chưa đủ điều kiện hiện lời mời tự động) — chỉ còn cách hướng dẫn thủ công.
+  overlayInstallGuide.classList.add("active");
+});
+
+btnInstallGuideClose.addEventListener("click", () => {
+  overlayInstallGuide.classList.remove("active");
+});
+
 // ---------- Khởi động ----------
 (function init() {
   const user = getUser();

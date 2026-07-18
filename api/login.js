@@ -8,11 +8,16 @@ const SHEET_RANGE = "NhanVien!A2:D";
 const ASSIGNMENT_RANGE = "Phancong!A2:D";
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
-// Tài khoản quản trị đặc biệt — dùng chung cơ chế khoá thiết bị với nhân viên thường (cùng tab
-// NhanVien), chỉ khác là được tự tạo dòng ở lần đăng nhập đầu tiên (không cần công ty tự thêm tay
-// trên Google Sheet) và không có danh sách công trình.
-const ADMIN_PHONE = "0123443210";
-const ADMIN_EMPLOYEE_ID = "admin";
+// Tài khoản quản trị — dùng chung cơ chế khoá thiết bị với nhân viên thường (cùng tab NhanVien,
+// mỗi admin có SĐT thật riêng của mình), chỉ khác là không có danh sách công trình. Có thể có
+// nhiều admin cùng lúc — thêm mã mới vào danh sách này (viết thường, không dấu). Ngoại trừ mã
+// gốc "admin" (SĐT cố định bootstrap ban đầu), các mã admin khác PHẢI được công ty tự tạo dòng
+// trước trong NhanVien (VD qua "+ Thêm nhân viên" ở trang Admin) rồi mới đăng nhập được — không
+// tự tạo dòng mới từ màn đăng nhập cho các mã này, để tránh ai cũng có thể tự phong mình làm admin
+// chỉ bằng cách gõ 1 mã "adminXX" chưa từng tồn tại.
+const ADMIN_EMPLOYEE_IDS = new Set(["admin", "admin00", "admin01"]);
+const BOOTSTRAP_ADMIN_PHONE = "0123443210";
+const BOOTSTRAP_ADMIN_EMPLOYEE_ID = "admin";
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
@@ -36,25 +41,27 @@ module.exports = async (req, res) => {
     });
 
     const rows = data.values || [];
-    const isAdminLogin = phone.trim() === ADMIN_PHONE && employeeId.trim().toLowerCase() === ADMIN_EMPLOYEE_ID;
+    const normalizedEmployeeId = employeeId.trim().toLowerCase();
+    const isAdminLogin = ADMIN_EMPLOYEE_IDS.has(normalizedEmployeeId);
     const rowIndex = rows.findIndex(
       r => (r[1] || "").trim() === phone.trim()
-        && (r[2] || "").trim().toLowerCase() === employeeId.trim().toLowerCase()
+        && (r[2] || "").trim().toLowerCase() === normalizedEmployeeId
     );
 
     if (rowIndex === -1) {
-      if (!isAdminLogin) {
+      const isBootstrapAdmin = phone.trim() === BOOTSTRAP_ADMIN_PHONE && normalizedEmployeeId === BOOTSTRAP_ADMIN_EMPLOYEE_ID;
+      if (!isBootstrapAdmin) {
         res.status(401).json({ ok: false, message: "Số điện thoại hoặc mã nhân viên không đúng" });
         return;
       }
-      // Lần đầu đăng nhập admin trên máy này — tự tạo dòng trong NhanVien và khoá luôn vào máy
-      // này (không cần công ty tự vào Google Sheet thêm tay).
+      // Lần đầu đăng nhập admin gốc trên máy này — tự tạo dòng trong NhanVien và khoá luôn vào
+      // máy này (không cần công ty tự vào Google Sheet thêm tay).
       const newRowNumber = rows.length + 2;
       await sheets.spreadsheets.values.update({
         spreadsheetId: sheetId,
         range: `NhanVien!A${newRowNumber}:D${newRowNumber}`,
         valueInputOption: "RAW",
-        requestBody: { values: [["Admin", ADMIN_PHONE, ADMIN_EMPLOYEE_ID, deviceId]] },
+        requestBody: { values: [["Admin", BOOTSTRAP_ADMIN_PHONE, BOOTSTRAP_ADMIN_EMPLOYEE_ID, deviceId]] },
       });
       res.status(200).json({ ok: true, fullName: "Admin", isAdmin: true, projects: [] });
       return;

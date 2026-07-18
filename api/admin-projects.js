@@ -5,17 +5,17 @@
 const { google } = require("googleapis");
 const { getAuth } = require("./_lib/google");
 
-const ADMIN_PHONE = "0123443210";
-const ADMIN_EMPLOYEE_ID = "admin";
+// Khớp với ADMIN_EMPLOYEE_IDS trong api/login.js — thêm mã admin mới thì sửa ở cả 2 nơi.
+const ADMIN_EMPLOYEE_IDS = new Set(["admin", "admin00", "admin01"]);
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
 async function verifyAdmin(sheets, sheetId, deviceId) {
+  if (!deviceId) return false;
   const { data } = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "NhanVien!A2:D" });
   const rows = data.values || [];
-  const adminRow = rows.find(
-    r => (r[1] || "").trim() === ADMIN_PHONE && (r[2] || "").trim().toLowerCase() === ADMIN_EMPLOYEE_ID
+  return rows.some(
+    r => ADMIN_EMPLOYEE_IDS.has((r[2] || "").trim().toLowerCase()) && (r[3] || "").trim() === deviceId
   );
-  return !!(adminRow && deviceId && (adminRow[3] || "").trim() === deviceId);
 }
 
 module.exports = async (req, res) => {

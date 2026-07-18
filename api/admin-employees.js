@@ -5,8 +5,9 @@
 const { google } = require("googleapis");
 const { getAuth } = require("./_lib/google");
 
-const ADMIN_PHONE = "0123443210";
-const ADMIN_EMPLOYEE_ID = "admin";
+// Danh sách mã nhân viên được coi là admin (mỗi admin có SĐT thật riêng của mình) — khớp với
+// ADMIN_EMPLOYEE_IDS trong api/login.js, thêm mã mới thì sửa ở cả 2 nơi.
+const ADMIN_EMPLOYEE_IDS = new Set(["admin", "admin00", "admin01"]);
 // Cột E "CCCD" mới thêm — không đụng vào cột D "Mã Máy" (do login.js tự quản lý riêng).
 const SHEET_RANGE = "NhanVien!A2:E";
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
@@ -28,11 +29,10 @@ module.exports = async (req, res) => {
     });
     const rows = data.values || [];
 
-    const adminRowIndex = rows.findIndex(
-      r => (r[1] || "").trim() === ADMIN_PHONE && (r[2] || "").trim().toLowerCase() === ADMIN_EMPLOYEE_ID
+    const isVerifiedAdmin = !!deviceId && rows.some(
+      r => ADMIN_EMPLOYEE_IDS.has((r[2] || "").trim().toLowerCase()) && (r[3] || "").trim() === deviceId
     );
-    const adminRow = adminRowIndex === -1 ? null : rows[adminRowIndex];
-    if (!adminRow || !deviceId || (adminRow[3] || "").trim() !== deviceId) {
+    if (!isVerifiedAdmin) {
       res.status(403).json({ ok: false, message: "Không có quyền truy cập" });
       return;
     }
@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
           cccd: r[4] || "",
           projects: projectsByEmployee[(r[2] || "").trim().toLowerCase()] || [],
         }))
-        .filter(e => !(e.phone === ADMIN_PHONE && e.employeeId.toLowerCase() === ADMIN_EMPLOYEE_ID));
+        .filter(e => !ADMIN_EMPLOYEE_IDS.has(e.employeeId.toLowerCase()));
       res.status(200).json({ ok: true, employees });
       return;
     }

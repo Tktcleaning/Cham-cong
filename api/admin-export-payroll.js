@@ -3,8 +3,8 @@
 const { google } = require("googleapis");
 const { getAuth } = require("./_lib/google");
 
-const ADMIN_PHONE = "0123443210";
-const ADMIN_EMPLOYEE_ID = "admin";
+// Khớp với ADMIN_EMPLOYEE_IDS trong api/login.js — thêm mã admin mới thì sửa ở cả 2 nơi.
+const ADMIN_EMPLOYEE_IDS = new Set(["admin", "admin00", "admin01"]);
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
 function csvEscape(value) {
@@ -22,10 +22,10 @@ module.exports = async (req, res) => {
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: "NhanVien!A2:D",
     });
-    const adminRow = (nvData.values || []).find(
-      r => (r[1] || "").trim() === ADMIN_PHONE && (r[2] || "").trim().toLowerCase() === ADMIN_EMPLOYEE_ID
+    const isVerifiedAdmin = !!deviceId && (nvData.values || []).some(
+      r => ADMIN_EMPLOYEE_IDS.has((r[2] || "").trim().toLowerCase()) && (r[3] || "").trim() === deviceId
     );
-    if (!adminRow || !deviceId || (adminRow[3] || "").trim() !== deviceId) {
+    if (!isVerifiedAdmin) {
       res.status(403).json({ ok: false, message: "Không có quyền truy cập" });
       return;
     }

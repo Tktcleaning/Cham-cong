@@ -295,7 +295,7 @@ btnChangeProject.addEventListener("click", () => {
   const user = getUser();
   // Đang trong ca (đã vào ca, chưa tan ca) thì không cho đổi công trình khác — tránh vào ca ở
   // công trình này nhưng lại tan ca ở công trình khác, gây sai lệch dữ liệu chấm công.
-  if (user && getTodayStatus(user.phone) === "in") {
+  if (user && getCurrentShiftStatus(user.phone) === "in") {
     showAlert("Bạn đang trong ca làm việc. Vui lòng bấm TAN CA ở công trình hiện tại trước khi đổi sang công trình khác.");
     return;
   }
@@ -356,11 +356,11 @@ function updateCustomProjectBox() {
   }
   customProjectBox.classList.add("show");
 
-  if (getTodayStatus(user.phone) === "in") {
+  if (getCurrentShiftStatus(user.phone) === "in") {
     // Đang trong ca: khoá ô nhập, hiện đúng tên đã dùng lúc vào ca — tránh đổi tên giữa ca.
     // Bản ghi đã lưu dạng "Công Trình Khác : <tên gõ>" nên cần tách phần tiền tố ra để chỉ
     // hiện lại đúng phần tên công nhân đã gõ trong ô nhập.
-    const openProject = getLastInProjectToday(user.phone);
+    const openProject = getCurrentOpenProject(user.phone);
     const savedName = openProject ? openProject.name : "";
     const prefix = `${project.name} : `;
     inputCustomProject.value = savedName.startsWith(prefix) ? savedName.slice(prefix.length) : "";
@@ -386,36 +386,35 @@ function enterMainView() {
   showView("main");
 }
 
-// Trạng thái ca làm hiện tại = bản ghi mới nhất trong ngày của user
-function getTodayStatus(phone) {
-  const today = new Date().toDateString();
-  const records = getUserRecords(phone).filter(
-    r => new Date(r.timestamp).toDateString() === today
-  );
+// Trạng thái ca làm hiện tại = bản ghi mới nhất của user, KHÔNG giới hạn theo ngày hôm nay — để
+// đúng với ca đêm (VD vào ca 21h20, qua nửa đêm hoặc sang tận chiều hôm sau mới tan ca vẫn coi là
+// "đang trong ca" bình thường, không bị ngắt giữa chừng chỉ vì đã sang ngày mới).
+function getCurrentShiftStatus(phone) {
+  const records = getUserRecords(phone);
   if (records.length === 0) return "off";
   return records[0].type; // "in" hoặc "out", records đã unshift nên [0] là mới nhất
 }
 
-// Công trình của lần "vào ca" gần nhất trong ngày (khi đang trong ca) — dùng để khôi phục
-// đúng công trình đang làm dở nếu công nhân lỡ đăng xuất rồi đăng nhập lại giữa ca.
-function getLastInProjectToday(phone) {
-  const today = new Date().toDateString();
-  const records = getUserRecords(phone).filter(
-    r => new Date(r.timestamp).toDateString() === today
-  );
+// Công trình của lần "vào ca" gần nhất (khi đang trong ca) — dùng để khôi phục đúng công trình
+// đang làm dở nếu công nhân lỡ đăng xuất rồi đăng nhập lại giữa ca, kể cả ca đêm qua ngày mới.
+function getCurrentOpenProject(phone) {
+  const records = getUserRecords(phone);
   if (records.length === 0 || records[0].type !== "in") return null;
   return { id: records[0].projectId, name: records[0].projectName };
 }
 
-// Bản ghi "vào ca" còn treo (chưa tan ca) từ một NGÀY TRƯỚC (không phải hôm nay) — nghĩa là công
-// nhân đã quên bấm TAN CA. Trả về null nếu ca đang mở là của chính hôm nay (vẫn coi là bình thường).
+// Ca làm bị bỏ quên thật sự (không phải ca đêm đang làm dở): "vào ca" đã mở quá lâu mà chưa "tan
+// ca" — dùng ngưỡng SỐ GIỜ đã trôi qua thay vì so ngày, vì so ngày sẽ bắt nhầm ca đêm hợp lệ (vào
+// ca tối hôm trước, tan ca qua nửa đêm hoặc tận chiều hôm sau) thành "quên chấm công".
+const STALE_SHIFT_HOURS = 24;
+
 function getStaleOpenShift(phone) {
   const records = getUserRecords(phone); // mới nhất ở đầu
   if (records.length === 0) return null;
   const latest = records[0];
   if (latest.type !== "in") return null;
-  const today = new Date().toDateString();
-  if (new Date(latest.timestamp).toDateString() === today) return null;
+  const hoursSinceCheckIn = (Date.now() - new Date(latest.timestamp).getTime()) / 3600000;
+  if (hoursSinceCheckIn < STALE_SHIFT_HOURS) return null;
   return latest;
 }
 
@@ -442,10 +441,10 @@ function routeAfterAuth() {
   const staleShift = getStaleOpenShift(user.phone);
   if (staleShift) { showMakeupView(staleShift); return; }
 
-  // Nếu vừa đăng xuất khi đang trong ca (hôm nay) rồi đăng nhập lại, khôi phục đúng công trình
-  // đang làm dở thay vì bắt chọn lại — tránh vào ca 1 nơi nhưng tan ca ở nơi khác.
-  if (getTodayStatus(user.phone) === "in") {
-    const lastProject = getLastInProjectToday(user.phone);
+  // Nếu vừa đăng xuất khi đang trong ca (kể cả ca đêm qua ngày mới) rồi đăng nhập lại, khôi phục
+  // đúng công trình đang làm dở thay vì bắt chọn lại — tránh vào ca 1 nơi nhưng tan ca ở nơi khác.
+  if (getCurrentShiftStatus(user.phone) === "in") {
+    const lastProject = getCurrentOpenProject(user.phone);
     if (lastProject && lastProject.id) {
       setCurrentProject(lastProject);
       enterMainView();
@@ -459,14 +458,11 @@ function routeAfterAuth() {
   enterMainView();
 }
 
-// Thời điểm "vào ca" đang mở (chưa có "tan ca" đi kèm) trong ngày hôm nay — dùng để tính thời
-// gian của ca vừa hoàn thành ngay khi bấm TAN CA.
-function getOpenInTimestampToday(phone) {
-  const today = new Date().toDateString();
-  const records = getUserRecords(phone).filter(
-    r => new Date(r.timestamp).toDateString() === today
-  );
-  const lastIn = records.find(r => r.type === "in"); // records mới nhất ở đầu
+// Thời điểm "vào ca" đang mở (chưa có "tan ca" đi kèm), KHÔNG giới hạn theo ngày hôm nay — dùng
+// để tính thời gian ca vừa hoàn thành ngay khi bấm TAN CA, kể cả ca đêm qua ngày mới.
+function getCurrentOpenInTimestamp(phone) {
+  const records = getUserRecords(phone); // mới nhất ở đầu
+  const lastIn = records.find(r => r.type === "in");
   return lastIn ? new Date(lastIn.timestamp) : null;
 }
 
@@ -480,7 +476,7 @@ function formatDurationVN(ms) {
 function refreshStatus() {
   const user = getUser();
   if (!user) return;
-  const status = getTodayStatus(user.phone);
+  const status = getCurrentShiftStatus(user.phone);
 
   if (status === "in") {
     statusBanner.className = "status-banner status-on";
@@ -609,8 +605,9 @@ async function finishCheck(type, photo, loc) {
   // Tính thời gian ca vừa hoàn thành — phải tính TRƯỚC khi lưu bản ghi "tan ca" mới, vì cần tìm
   // bản ghi "vào ca" đang mở dựa trên các bản ghi đã có.
   let shiftMs = null;
+  let openIn = null;
   if (type === "out") {
-    const openIn = getOpenInTimestampToday(user.phone);
+    openIn = getCurrentOpenInTimestamp(user.phone);
     shiftMs = openIn ? (now - openIn) : 0;
   }
 
@@ -642,7 +639,9 @@ async function finishCheck(type, photo, loc) {
       employeeId: user.employeeId,
       fullName: user.fullName || "",
       projectName: effectiveProjectName,
-      day: now.getDate(),
+      // Tính vào đúng ngày đã VÀO CA (không phải ngày tan ca), để ca đêm qua nửa đêm không bị
+      // tách giờ công sang nhầm ngày hôm sau.
+      day: (openIn || now).getDate(),
       hours: roundToHalfHour(shiftMs),
     });
   }
@@ -658,7 +657,7 @@ async function finishCheck(type, photo, loc) {
   gpsStatus.textContent = parts.join(" — ");
 
   if (type === "out") {
-    await showAlert(`Bạn đã làm trong ngày hôm nay: ${formatDurationVN(shiftMs)}.\nCảm ơn và chúc bạn một ngày tốt lành!`);
+    await showAlert(`Bạn đã làm ca này: ${formatDurationVN(shiftMs)}.\nCảm ơn và chúc bạn một ngày tốt lành!`);
     renderProjectList();
     showView("project");
   }
@@ -857,11 +856,11 @@ btnMakeupSubmit.addEventListener("click", async () => {
 
   const inDate = new Date(currentStaleShift.timestamp);
   const [hh, mm] = timeStr.split(":").map(Number);
-  const outDate = new Date(inDate.getFullYear(), inDate.getMonth(), inDate.getDate(), hh, mm, 0);
-
+  let outDate = new Date(inDate.getFullYear(), inDate.getMonth(), inDate.getDate(), hh, mm, 0);
+  // Ca đêm: nếu giờ nhập dựng cùng ngày với giờ vào ca lại ra "sớm hơn hoặc bằng" giờ vào ca (VD
+  // vào ca 21:20, tan ca 00:41 hoặc 17:00 — đều là hôm SAU), hiểu là đã sang ngày kế tiếp.
   if (outDate <= inDate) {
-    makeupError.textContent = `Giờ tan ca phải sau giờ vào ca (${formatTime(inDate)}).`;
-    return;
+    outDate = new Date(outDate.getTime() + 24 * 3600000);
   }
 
   makeupError.textContent = "";
